@@ -72,13 +72,13 @@ public class StockOrderServiceImpl implements StockOrderService {
         Map<String, Object> pubInfo = stockDetailRepository.getStockPubInfo(request.getStockId());
         int pubAmount = getIntOrDefault(pubInfo, "publication_balance");
         int pubPrice = getIntOrDefault(pubInfo, "publication_price");
-        // a. 발행 주식 거래
-        if (pubAmount > 0) {
+        // a. 발행 주식 거래 (매수 가격이 발행가와 같을 때만)
+        if (pubAmount > 0 && request.getPrice() >= pubPrice) {
+            if (request.getPrice() > pubPrice) {
+                return "시스템에서 " + pubPrice + "원에 발행 중입니다. 더 비싸게 살 필요는 없겠죠?";
+            }
             if (request.getAmount() > pubAmount) {
                 return "발행 잔량보다 많은 수량을 매수할 수 없습니다. (남은 수량: " + pubAmount +")";
-            }
-            if (request.getPrice() < pubPrice) {
-                return "발행 가격(" + pubPrice + ")보다 낮은 가격으로 매수할 수 없습니다.";
             }
 
             Order order = createOrder(request, OrderStatus.매수, OrderStatus.체결);
@@ -170,10 +170,8 @@ public class StockOrderServiceImpl implements StockOrderService {
         validateTickSize(request.getPrice());
 
         Map<String, Object> pubInfo = stockDetailRepository.getStockPubInfo(request.getStockId());
-        int pubAmount = getIntOrDefault(pubInfo, "publication_balance");
-        if (pubAmount > 0) {
-            return "발행 잔량이 남아 매도요청 할 수 없습니다.";
-        }
+        // 발행 잔량(pubAmount)이 남아 있어도 매도(예약)는 가능하도록 방어 로직 제거
+        
         // 1. 보유 주식 수량 검증
         int stockAmount = stockDetailRepository.getStudentStockAmount(request.getStockId(), request.getStudentId());
         if (request.getAmount() > stockAmount) {

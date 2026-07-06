@@ -22,6 +22,9 @@ public class StockOrderController {
         }
         request.setStudentId(studentId);
         String result = stockOrderService.buyStock(request);
+        if (result.contains("없습니다") || result.contains("부족합니다") || result.contains("필요는 없겠죠")) {
+            return ApiResponse.error(result);
+        }
         return ApiResponse.success(result, result);
     }
 
@@ -33,6 +36,9 @@ public class StockOrderController {
         }
         request.setStudentId(studentId);
         String result = stockOrderService.sellStock(request);
+        if (result.contains("없습니다") || result.contains("부족합니다")) {
+            return ApiResponse.error(result);
+        }
         return ApiResponse.success(result, result);
     }
 

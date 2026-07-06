@@ -44,4 +44,15 @@ public class StockDetailController {
         java.util.List<StockPriceHistory> history = stockPriceHistoryRepository.findHistoryByStockId(stockId);
         return ApiResponse.success("Stock price history", history);
     }
+
+    @GetMapping("/{stockId}/orders/my")
+    public ApiResponse<java.util.List<com.skfkfkvlrm.stockgame_spring.domain.Order>> getMyOrders(
+            @PathVariable("stockId") int stockId,
+            @SessionAttribute(name = "studentId", required = false) String studentId) {
+        if (studentId == null) {
+            return ApiResponse.error("로그인이 필요합니다.");
+        }
+        java.util.List<com.skfkfkvlrm.stockgame_spring.domain.Order> myOrders = stockDetailService.getwaitingOrderList(stockId, studentId);
+        return ApiResponse.success("My Orders", myOrders);
+    }
 }

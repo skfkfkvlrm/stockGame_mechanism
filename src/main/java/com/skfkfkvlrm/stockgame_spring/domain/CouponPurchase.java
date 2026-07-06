@@ -22,6 +22,7 @@ public class CouponPurchase {
     private int couponId;
     private int price;
     private String name;
+    @Enumerated(EnumType.STRING)
     private CouponPurchaseStatus state;
     @CreationTimestamp
     private LocalDateTime createdDate;

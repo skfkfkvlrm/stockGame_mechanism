@@ -17,6 +17,12 @@
    - 호가 단위(Tick Size) 및 시장 개/폐장(MarketSettings) 정책 적용 로직
    - 체결 완료 시 개인 알림(`/queue/notifications`) 및 호가창 브로드캐스트(`/topic/orders`) 발송
 
+### 🔥 최신 스프린트 진행 상황 (완료)
+- `[x]` `application.yaml`의 `ddl-auto` 및 `generate-ddl` 속성 비활성화 완료 (데이터 유실 방지)
+- `[x]` 프론트엔드 `vite.config.js` 프록시 설정 하드코딩 제거 (`.env` 동적 할당)
+- `[x]` `StockDetail.jsx` WebSocket 연결 누수(cleanup) 해결 (기반영됨 확인 완료)
+- `[x]` `Transaction` 엔티티 `amount`, `price` 필드 추가 및 DB 동기화 (기반영됨 확인 완료)
+
 ### 📌 향후 계획
 - 백엔드 자체적인 메인 로드맵은 모두 종료되었습니다.
 - 최근 발견된 잔여 결함(트랜잭션 기록 무결성 및 ddl-auto 문제)에 대한 패치 및 컴파일 검증을 성공적으로 마쳤습니다 (참고: `backend_phase7_cleanup.md`, `backend_phase7_test_result.md`).
@@ -49,6 +55,5 @@
 8. **백엔드 쿠폰 및 거래 엔티티 구조 개선**: `CouponPurchase` 등 핵심 엔티티 누락 매핑(학생ID, 쿠폰ID 등) 복구 완료
 
 ### 🔗 관련 리포지토리
-- 백엔드: [stockGame_spring](https://github.com/skfkfkvlrm/stockGame_spring) — `feature/react-migration` 브랜치
-- 프론트엔드: [stockGame_react](https://github.com/skfkfkvlrm/stockGame_react) — `feature/react-migration` 브랜치
-
+- 백엔드: [stockGame_spring](https://github.com/skfkfkvlrm/stockGame_spring)
+- 프론트엔드: [stockGame_react](https://github.com/skfkfkvlrm/stockGame_react)
