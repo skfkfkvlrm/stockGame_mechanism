@@ -1,10 +1,10 @@
 package com.skfkfkvlrm.stockgame_spring.config;
 
-import com.skfkfkvlrm.stockgame_spring.domain.AppUser;
-import com.skfkfkvlrm.stockgame_spring.domain.MarketSettings;
-import com.skfkfkvlrm.stockgame_spring.domain.Role;
-import com.skfkfkvlrm.stockgame_spring.repository.AppUserRepository;
-import com.skfkfkvlrm.stockgame_spring.repository.MarketSettingsRepository;
+import com.skfkfkvlrm.stockgame_spring.domain.member.AppUser;
+import com.skfkfkvlrm.stockgame_spring.domain.admin.MarketSettings;
+import com.skfkfkvlrm.stockgame_spring.domain.member.Role;
+import com.skfkfkvlrm.stockgame_spring.domain.member.AppUserRepository;
+import com.skfkfkvlrm.stockgame_spring.domain.admin.MarketSettingsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;

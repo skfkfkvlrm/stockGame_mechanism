@@ -1,7 +1,7 @@
 package com.skfkfkvlrm.stockgame_spring.auth;
 
-import com.skfkfkvlrm.stockgame_spring.domain.AppUser;
-import com.skfkfkvlrm.stockgame_spring.repository.AppUserRepository;
+import com.skfkfkvlrm.stockgame_spring.domain.member.AppUser;
+import com.skfkfkvlrm.stockgame_spring.domain.member.AppUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

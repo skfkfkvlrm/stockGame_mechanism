@@ -1,6 +1,6 @@
 package com.skfkfkvlrm.stockgame_spring.exception;
 
-import com.skfkfkvlrm.stockgame_spring.controller.dto.response.ApiResponse;
+import com.skfkfkvlrm.stockgame_spring.domain.common.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;

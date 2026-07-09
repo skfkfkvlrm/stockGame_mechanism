@@ -1,6 +1,6 @@
 package com.skfkfkvlrm.stockgame_spring.auth;
 
-import com.skfkfkvlrm.stockgame_spring.domain.AppUser;
+import com.skfkfkvlrm.stockgame_spring.domain.member.AppUser;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
