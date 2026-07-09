@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@MapperScan(value = "com.skfkfkvlrm.stockgame_spring.repository", annotationClass = org.apache.ibatis.annotations.Mapper.class)
+@MapperScan(value = "com.skfkfkvlrm.stockgame_spring.domain", annotationClass = org.apache.ibatis.annotations.Mapper.class)
 @EnableScheduling
 public class StockGameSpringApplication {
 
