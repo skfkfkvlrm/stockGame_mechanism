@@ -46,6 +46,19 @@ public class StockDetailController {
         return ApiResponse.success("Stock price history", history);
     }
 
+    @GetMapping("/{stockId}/orderbook")
+    public ApiResponse<java.util.Map<String, java.util.List<Order>>> getOrderbook(
+            @PathVariable("stockId") int stockId) {
+        java.util.List<Order> sellOrders = stockDetailService.getLiveOrderList(stockId, "매도");
+        java.util.List<Order> buyOrders = stockDetailService.getLiveOrderList(stockId, "매수");
+        
+        java.util.Map<String, java.util.List<Order>> orderbook = new java.util.HashMap<>();
+        orderbook.put("sell", sellOrders);
+        orderbook.put("buy", buyOrders);
+        
+        return ApiResponse.success("Orderbook", orderbook);
+    }
+
     @GetMapping("/{stockId}/orders/my")
     public ApiResponse<java.util.List<Order>> getMyOrders(
             @PathVariable("stockId") int stockId,
