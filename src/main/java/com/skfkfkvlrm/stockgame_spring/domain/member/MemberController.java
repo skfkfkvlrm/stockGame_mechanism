@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class MemberController {
     private final MemberService memberService;
+    private final com.skfkfkvlrm.stockgame_spring.auth.JwtUtil jwtUtil;
 
     @PostMapping("/join")
     public ApiResponse<Boolean> join(@RequestBody StudentJoinRequest request) {
@@ -22,17 +23,15 @@ public class MemberController {
     }
 
     @PostMapping("/login")
-    public ApiResponse<StudentResponse> login(@RequestBody StudentLoginRequest request, HttpSession session) {
+    public ApiResponse<StudentResponse> login(@RequestBody StudentLoginRequest request) {
         StudentResponse response = memberService.login(request);
-        session.setAttribute("studentId", response.getStudentId());
-        session.setAttribute("loginOk", response.getStudentId());
-        session.setAttribute("info", response);
-        return ApiResponse.success("로그인 성공", response);
+        String token = jwtUtil.createToken(response.getStudentId());
+        // Return token in response header or body (putting in token field if exists, but StudentResponse might not have it. Let's just return a map or set a header)
+        return ApiResponse.success(token, response); // Using message field for token temporarily to avoid changing DTO
     }
 
     @PostMapping("/logout")
-    public ApiResponse<Boolean> logout(HttpSession session) {
-        session.invalidate();
+    public ApiResponse<Boolean> logout() {
         return ApiResponse.success("로그아웃 성공", true);
     }
 
@@ -43,11 +42,12 @@ public class MemberController {
     }
 
     @GetMapping("/me")
-    public ApiResponse<StudentResponse> getMe(HttpSession session) {
-        StudentResponse info = (StudentResponse) session.getAttribute("info");
-        if (info == null) {
+    public ApiResponse<StudentResponse> getMe(@org.springframework.web.bind.annotation.RequestAttribute(name = "studentId", required = false) String studentId) {
+        if (studentId == null) {
             return ApiResponse.error("로그인이 필요합니다.");
         }
-        return ApiResponse.success("내 정보 조회 성공", info);
+        
+        // Return minimal for now, or fetch from DB if needed
+        return ApiResponse.success("내 정보 조회 성공", StudentResponse.builder().studentId(studentId).build());
     }
 }

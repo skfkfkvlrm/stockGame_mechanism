@@ -29,7 +29,7 @@ public class StockDetailController {
     @GetMapping("/{stockId}")
     public ApiResponse<StockDetailResponse> getStockDetail(
             @PathVariable("stockId") int stockId,
-            @SessionAttribute(name = "studentId", required = false) String studentId) {
+            @org.springframework.web.bind.annotation.RequestAttribute(name = "studentId", required = false) String studentId) {
         
         if (studentId == null) {
             return ApiResponse.error("로그인이 필요합니다.");
@@ -49,7 +49,7 @@ public class StockDetailController {
     @GetMapping("/{stockId}/orders/my")
     public ApiResponse<java.util.List<Order>> getMyOrders(
             @PathVariable("stockId") int stockId,
-            @SessionAttribute(name = "studentId", required = false) String studentId) {
+            @org.springframework.web.bind.annotation.RequestAttribute(name = "studentId", required = false) String studentId) {
         if (studentId == null) {
             return ApiResponse.error("로그인이 필요합니다.");
         }

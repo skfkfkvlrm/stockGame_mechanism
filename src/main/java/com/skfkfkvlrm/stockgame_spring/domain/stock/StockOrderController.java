@@ -16,7 +16,7 @@ public class StockOrderController {
 
     @PostMapping("/buy")
     public ApiResponse<String> buyStock(@Valid @RequestBody StockOrderRequest request,
-                           @SessionAttribute(name = "studentId", required = false) String studentId) {
+                           @org.springframework.web.bind.annotation.RequestAttribute(name = "studentId", required = false) String studentId) {
         if (studentId == null) {
             throw new UnauthorizedAccessException();
         }
@@ -30,7 +30,7 @@ public class StockOrderController {
 
     @PostMapping("/sell")
     public ApiResponse<String> sellStock(@Valid @RequestBody StockOrderRequest request,
-                            @SessionAttribute(name = "studentId", required = false) String studentId) {
+                            @org.springframework.web.bind.annotation.RequestAttribute(name = "studentId", required = false) String studentId) {
         if (studentId == null) {
             throw new UnauthorizedAccessException();
         }
@@ -45,7 +45,7 @@ public class StockOrderController {
     @PostMapping("/cancel")
     public ApiResponse<String> cancelOrder(@RequestParam("orderId") int orderId, 
                                            @RequestParam("stockId") int stockId,
-                              @SessionAttribute(name = "studentId", required = false) String studentId) {
+                              @org.springframework.web.bind.annotation.RequestAttribute(name = "studentId", required = false) String studentId) {
         if (studentId == null) {
             throw new UnauthorizedAccessException();
         }

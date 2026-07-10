@@ -16,7 +16,7 @@ public class MyAssetController {
     private final MyAssetService myAssetService;
 
     @GetMapping("/")
-    public ApiResponse<DashboardResponse> getDashboard(@SessionAttribute(name = "studentId", required = false) String studentId) {
+    public ApiResponse<DashboardResponse> getDashboard(@org.springframework.web.bind.annotation.RequestAttribute(name = "studentId", required = false) String studentId) {
         if (studentId == null) {
             return ApiResponse.error("로그인이 필요합니다.");
         }

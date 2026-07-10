@@ -101,19 +101,22 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // ── Chain 2: 나머지 경로 (학생 세션 방식 유지) ─────────────────────────────
+    // ── Chain 2: 나머지 경로 (학생 JWT 방식) ─────────────────────────────
     @Bean
     @Order(2)
-    public SecurityFilterChain studentFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain studentFilterChain(HttpSecurity http, com.skfkfkvlrm.stockgame_spring.auth.JwtFilter jwtFilter) throws Exception {
         http
             .cors(org.springframework.security.config.Customizer.withDefaults()) // 전역 CORS 설정 적용
             .authorizeHttpRequests(auth -> auth
-                .anyRequest().permitAll()   // 학생 인증은 기존 HttpSession/컨트롤러 방식 그대로
+                .requestMatchers("/members/login", "/members/join", "/members/id-check").permitAll() // 로그인, 회원가입 등 공개
+                .requestMatchers("/api/asset/**", "/api/stock/**", "/orders/**", "/coupons/**", "/history").authenticated() // API 보호
+                .anyRequest().permitAll()
             )
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // 학생 세션 허용
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // JWT 사용 (Stateless)
             )
+            .addFilterBefore(jwtFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
             // Spring Security의 기본 로그인 페이지/리다이렉트 비활성화
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable());

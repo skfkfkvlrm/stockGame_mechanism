@@ -19,7 +19,7 @@ public class NewsController {
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @GetMapping
-    public ApiResponse<List<String>> getNews(@SessionAttribute(name = "studentId", required = false) String studentId) {
+    public ApiResponse<List<String>> getNews(@org.springframework.web.bind.annotation.RequestAttribute(name = "studentId", required = false) String studentId) {
         if (studentId == null) {
             return ApiResponse.error("로그인이 필요합니다.");
         }

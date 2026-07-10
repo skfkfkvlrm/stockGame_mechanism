@@ -23,7 +23,7 @@ public class CouponController {
     private final CouponService couponService;
 
     @GetMapping
-    public ApiResponse<List<Coupon>> getCoupons(@SessionAttribute(name = "studentId", required = false) String studentId) {
+    public ApiResponse<List<Coupon>> getCoupons(@org.springframework.web.bind.annotation.RequestAttribute(name = "studentId", required = false) String studentId) {
         if (studentId == null) {
             return ApiResponse.error("로그인이 필요합니다.");
         }
@@ -32,7 +32,7 @@ public class CouponController {
     }
 
     @GetMapping("/my")
-    public ApiResponse<List<CouponPurchase>> getMyCoupons(@SessionAttribute(name = "studentId", required = false) String studentId) {
+    public ApiResponse<List<CouponPurchase>> getMyCoupons(@org.springframework.web.bind.annotation.RequestAttribute(name = "studentId", required = false) String studentId) {
         if (studentId == null) {
             return ApiResponse.error("로그인이 필요합니다.");
         }
@@ -41,7 +41,7 @@ public class CouponController {
     }
 
     @org.springframework.web.bind.annotation.PostMapping("/{couponId}/buy")
-    public ApiResponse<String> buyCoupon(@SessionAttribute(name = "studentId", required = false) String studentId,
+    public ApiResponse<String> buyCoupon(@org.springframework.web.bind.annotation.RequestAttribute(name = "studentId", required = false) String studentId,
                                          @org.springframework.web.bind.annotation.PathVariable("couponId") int couponId) {
         if (studentId == null) {
             return ApiResponse.error("로그인이 필요합니다.");

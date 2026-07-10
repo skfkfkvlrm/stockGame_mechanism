@@ -19,7 +19,7 @@ public class MyPointHistoryController {
     private final MyPointHistoryRepository myPointHistoryRepository;
 
     @GetMapping({"", "/"})
-    public ApiResponse<List<PointHistoryResponse>> getHistory(@SessionAttribute(name = "studentId", required = false) String studentId) {
+    public ApiResponse<List<PointHistoryResponse>> getHistory(@org.springframework.web.bind.annotation.RequestAttribute(name = "studentId", required = false) String studentId) {
         if (studentId == null) {
             return ApiResponse.error("로그인이 필요합니다.");
         }

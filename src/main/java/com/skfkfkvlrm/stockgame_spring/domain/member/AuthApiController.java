@@ -15,7 +15,7 @@ public class AuthApiController {
 
     @GetMapping("/status")
     public Map<String, Object> status(
-            @SessionAttribute(name = "studentId", required = false) String studentId) {
+            @org.springframework.web.bind.annotation.RequestAttribute(name = "studentId", required = false) String studentId) {
         
         Map<String, Object> response = new HashMap<>();
 
@@ -24,11 +24,16 @@ public class AuthApiController {
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
             response.put("isAuthenticated", true);
             response.put("username", auth.getName());
-            response.put("role", auth.getAuthorities().iterator().next().getAuthority());
+            // Safe fallback if no authority
+            if (!auth.getAuthorities().isEmpty()) {
+                response.put("role", auth.getAuthorities().iterator().next().getAuthority());
+            } else {
+                response.put("role", "ROLE_STUDENT");
+            }
             return response;
         }
 
-        // 2. 학생 권한 확인 (HttpSession)
+        // 2. 학생 권한 확인 (JWT via RequestAttribute)
         if (studentId != null) {
             response.put("isAuthenticated", true);
             response.put("username", studentId);
