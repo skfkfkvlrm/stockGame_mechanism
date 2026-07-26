@@ -33,12 +33,12 @@ public class CouponServiceImpl implements CouponService {
         // 1. 포인트 잔액 확인
         int currentPoints = couponRepository.getStudentPoint(studentId);
         if (currentPoints < couponPrice) {
-            throw new IllegalStateException("포인트가 부족합니다.");
+            throw new com.skfkfkvlrm.stockgame_spring.exception.InsufficientPointException();
         }
         // 2. 포인트 차감 및 학생 보유 쿠폰 수량 1 증가
         int updatedRows = couponRepository.setStudentAssets(studentId, couponPrice);
         if (updatedRows == 0) {
-            throw new IllegalStateException("쿠폰 구매 중 오류가 발생했습니다. (잔액 부족)");
+            throw new com.skfkfkvlrm.stockgame_spring.exception.InsufficientPointException();
         }
         // 3. 쿠폰 구매 정보 구매내역에 추가
         couponRepository.setPurchaseRecord(studentId, couponId, couponName, couponPrice, CouponPurchaseStatus.사용전);

@@ -49,7 +49,7 @@ class StockOrderServiceTest {
     }
 
     @Test
-    @DisplayName("포인트 부족 시 매수 거절 테스트")
+    @DisplayName("포인트 부족 시 InsufficientPointException 발생 테스트")
     void buyStockFailInsufficientPoints() {
         // given
         given(stockDetailRepository.getStudentPoint("student1")).willReturn(1000);
@@ -60,11 +60,9 @@ class StockOrderServiceTest {
                 .price(2000)
                 .build();
 
-        // when
-        String result = stockOrderService.buyStock(request);
-
-        // then
-        assertThat(result).isEqualTo("보유 포인트가 부족합니다");
+        // when & then
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> stockOrderService.buyStock(request))
+                .isInstanceOf(com.skfkfkvlrm.stockgame_spring.exception.InsufficientPointException.class);
     }
 
     @Test

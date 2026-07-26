@@ -29,14 +29,14 @@ public class StockOrderServiceImpl implements StockOrderService {
     private void validateMarketOpen() {
         MarketSettings settings = marketSettingsRepository.findById(1).orElse(null);
         if (settings != null && !settings.isMarketOpen()) {
-            throw new IllegalStateException("현재 주식 시장이 폐장되었습니다.");
+            throw new com.skfkfkvlrm.stockgame_spring.exception.MarketClosedException();
         }
     }
 
     private void validateTickSize(int price) {
         int tickSize = getTickSize(price);
         if (price % tickSize != 0) {
-            throw new IllegalArgumentException("올바르지 않은 호가 단위입니다. 현재 가격대의 호가 단위는 " + tickSize + "원 입니다.");
+            throw new com.skfkfkvlrm.stockgame_spring.exception.InvalidTickSizeException();
         }
     }
 
@@ -66,7 +66,7 @@ public class StockOrderServiceImpl implements StockOrderService {
         // 1. 보유 포인트 확인
         int currentPoints = stockDetailRepository.getStudentPoint(request.getStudentId());
         if (currentPoints < totalOrderPrice) {
-            return "보유 포인트가 부족합니다";
+            throw new com.skfkfkvlrm.stockgame_spring.exception.InsufficientPointException();
         }
         // 2. 발행 정보 확인
         Map<String, Object> pubInfo = stockDetailRepository.getStockPubInfo(request.getStockId());
@@ -75,10 +75,10 @@ public class StockOrderServiceImpl implements StockOrderService {
         // a. 발행 주식 거래 (매수 가격이 발행가와 같을 때만)
         if (pubAmount > 0 && request.getPrice() >= pubPrice) {
             if (request.getPrice() > pubPrice) {
-                return "시스템에서 " + pubPrice + "원에 발행 중입니다. 더 비싸게 살 필요는 없겠죠?";
+                throw new com.skfkfkvlrm.stockgame_spring.exception.InvalidPublicationPriceException();
             }
             if (request.getAmount() > pubAmount) {
-                return "발행 잔량보다 많은 수량을 매수할 수 없습니다. (남은 수량: " + pubAmount +")";
+                throw new com.skfkfkvlrm.stockgame_spring.exception.ExceededPublicationBalanceException();
             }
 
             Order order = createOrder(request, OrderStatus.매수, OrderStatus.체결);
@@ -175,7 +175,7 @@ public class StockOrderServiceImpl implements StockOrderService {
         // 1. 보유 주식 수량 검증
         int stockAmount = stockDetailRepository.getStudentStockAmount(request.getStockId(), request.getStudentId());
         if (request.getAmount() > stockAmount) {
-            return "보유 주식량보다 많은 매도 요청은 할 수 없습니다.";
+            throw new com.skfkfkvlrm.stockgame_spring.exception.InsufficientStockException();
         }
         int totalOrderPrice = request.getPrice() * request.getAmount();
         // 2. 학생 간 거래 (부분 체결 로직)

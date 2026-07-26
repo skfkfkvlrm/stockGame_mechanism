@@ -27,7 +27,7 @@ public class StockDetailServiceImpl implements StockDetailService {
     public StockDetailResponse getStockDetailInfo(int stockId) {
         Map<String, Object> stockInfo = stockDetailRepository.getStockInfo(stockId);
         if (stockInfo == null) {
-            throw new IllegalArgumentException("존재하지 않는 주식입니다. 주식 번호: " + stockId);
+            throw new com.skfkfkvlrm.stockgame_spring.exception.StockNotFoundException();
         }
 
         // 2. 주식 발행 정보 조회

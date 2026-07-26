@@ -12,6 +12,10 @@ public enum ErrorCode {
     INSUFFICIENT_STOCK(HttpStatus.BAD_REQUEST, "보유 주식이 부족합니다."),
     INVALID_ORDER_STATE(HttpStatus.BAD_REQUEST, "처리할 수 없는 주문 상태입니다."),
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "잘못된 입력값입니다."),
+    MARKET_CLOSED(HttpStatus.BAD_REQUEST, "현재 주식 시장이 폐장되었습니다."),
+    INVALID_TICK_SIZE(HttpStatus.BAD_REQUEST, "올바르지 않은 호가 단위입니다."),
+    EXCEEDED_PUBLICATION_BALANCE(HttpStatus.BAD_REQUEST, "발행 잔량보다 많은 수량을 매수할 수 없습니다."),
+    INVALID_PUBLICATION_PRICE(HttpStatus.BAD_REQUEST, "시스템 발행 가격보다 높은 가격으로 주문할 수 없습니다."),
     
     // 401 Unauthorized
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다."),
