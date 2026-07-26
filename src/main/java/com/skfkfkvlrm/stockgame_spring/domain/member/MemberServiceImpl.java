@@ -65,4 +65,9 @@ public class MemberServiceImpl implements MemberService {
     public boolean getIdCheck(String studentId) {
         return memberRepository.getIdCheck(studentId) > 0;
     }
+
+    @Override
+    public java.util.List<StudentRankingResponse> getStudentRanking() {
+        return memberRepository.getStudentRanking();
+    }
 }

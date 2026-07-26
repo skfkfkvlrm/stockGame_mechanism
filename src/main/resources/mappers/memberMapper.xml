@@ -41,4 +41,19 @@
         ORDER BY id ASC
     </select>
 
+    <!-- 학생 총 포인트 랭킹 조회 -->
+    <select id="getStudentRanking" resultType="com.skfkfkvlrm.stockgame_spring.domain.member.StudentRankingResponse">
+        SELECT 
+            ROW_NUMBER() OVER(ORDER BY total_point DESC, student_id ASC) AS `rank`,
+            student_id AS studentId, 
+            name, 
+            grade, 
+            class_name AS className, 
+            class_number AS classNumber, 
+            total_point AS totalPoint
+        FROM students
+        ORDER BY total_point DESC, student_id ASC
+        LIMIT 100
+    </select>
+
 </mapper>

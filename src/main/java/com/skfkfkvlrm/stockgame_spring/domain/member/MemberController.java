@@ -50,4 +50,10 @@ public class MemberController {
         // Return minimal for now, or fetch from DB if needed
         return ApiResponse.success("내 정보 조회 성공", StudentResponse.builder().studentId(studentId).build());
     }
+
+    @GetMapping("/ranking")
+    public ApiResponse<java.util.List<StudentRankingResponse>> getStudentRanking() {
+        java.util.List<StudentRankingResponse> rankingList = memberService.getStudentRanking();
+        return ApiResponse.success("학생 랭킹 조회 성공", rankingList);
+    }
 }

@@ -24,4 +24,7 @@ public interface MemberRepository {
 
     // 관리자용 전체 학생 목록 조회
     java.util.List<com.skfkfkvlrm.stockgame_spring.domain.admin.StudentAdminResponse> getAllStudents();
+
+    // 학생 총 포인트 순위 목록 조회
+    java.util.List<StudentRankingResponse> getStudentRanking();
 }
