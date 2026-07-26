@@ -37,7 +37,7 @@
 		FROM orders WHERE student_id = (SELECT id FROM students WHERE student_id = #{studentId}) AND stock_id = #{stockId} AND state='체결'
 	</select>
 	<select id="getStudentPoint" parameterType="String" resultType="int">
-		SELECT total_point FROM students WHERE student_id = #{studentId}
+		SELECT total_point FROM students WHERE student_id = #{studentId} FOR UPDATE
 	</select>
 	<insert id="setOrderRequest">
 		INSERT INTO orders (content, price, amount, state, created_date, student_id, stock_id)
@@ -79,7 +79,7 @@
 		UPDATE orders SET state = '취소' WHERE order_id = #{orderId}
 	</update>
 	<select id="getStockPubInfo" parameterType="int" resultType="map">
-		SELECT publication_balance, publication_price FROM stocks WHERE stock_id = #{stockId}
+		SELECT publication_balance, publication_price FROM stocks WHERE stock_id = #{stockId} FOR UPDATE
 	</select>
 	<update id="setStockPubBalance">
 		UPDATE stocks SET publication_balance = publication_balance - #{buyAmount} WHERE stock_id = #{stockId}
