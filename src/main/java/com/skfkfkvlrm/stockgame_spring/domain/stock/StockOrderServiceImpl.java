@@ -25,6 +25,7 @@ public class StockOrderServiceImpl implements StockOrderService {
     private final StockPriceHistoryRepository stockPriceHistoryRepository;
     private final MarketSettingsRepository marketSettingsRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final OrderMatcher orderMatcher = new OrderMatcher();
 
     private void validateMarketOpen() {
         MarketSettings settings = marketSettingsRepository.findById(1).orElse(null);
@@ -95,19 +96,21 @@ public class StockOrderServiceImpl implements StockOrderService {
             return "매수 주문이 체결되었습니다.";
         }
         // b. 학생 간 거래 (부분 체결 로직)
-        int remainingAmount = request.getAmount();
         // 매수 시 "매도" 대기열을 조회
         List<Order> sellOrders = stockDetailRepository.getMatchOrderList(
                 request.getStockId(), OrderStatus.매도.name(), request.getPrice(), request.getStudentId());
 
-        for (Order sellOrder : sellOrders) {
-            int matchAmount = Math.min(remainingAmount, sellOrder.getAmount());
-            int matchPrice = sellOrder.getPrice();
-            int matchTotalPrice = matchPrice * matchAmount;
+        MatchResult matchResult = orderMatcher.match(request.getAmount(), sellOrders);
+
+        for (MatchItem match : matchResult.getMatches()) {
+            Order sellOrder = match.getCounterOrder();
+            int matchAmount = match.getMatchAmount();
+            int matchPrice = match.getMatchPrice();
+            int matchTotalPrice = match.getMatchTotalPrice();
 
             // 매도 주문 처리
             int sellOrderId;
-            if (matchAmount == sellOrder.getAmount()) {
+            if (match.isFullyMatched()) {
                 stockDetailRepository.setOrderStateMatched(sellOrder.getOrderId());
                 sellOrderId = sellOrder.getOrderId();
             } else {
@@ -134,12 +137,9 @@ public class StockOrderServiceImpl implements StockOrderService {
             stockDetailRepository.setStudentPointUp(matchTotalPrice, sellOrder.getStudentId());
 
             stockPriceHistoryRepository.upsertDailyPrice(request.getStockId(), LocalDate.now(), matchPrice, matchAmount);
-
-            remainingAmount -= matchAmount;
-            if (remainingAmount == 0) {
-                break;
-            }
         }
+
+        int remainingAmount = matchResult.getRemainingAmount();
 
         // c. 남은 수량이 있으면 대기 등록
         if (remainingAmount > 0) {
@@ -179,19 +179,21 @@ public class StockOrderServiceImpl implements StockOrderService {
         }
         int totalOrderPrice = request.getPrice() * request.getAmount();
         // 2. 학생 간 거래 (부분 체결 로직)
-        int remainingAmount = request.getAmount();
         // 매도 시 "매수" 대기열을 조회
         List<Order> buyOrders = stockDetailRepository.getMatchOrderList(
                 request.getStockId(), OrderStatus.매수.name(), request.getPrice(), request.getStudentId());
 
-        for (Order buyOrder : buyOrders) {
-            int matchAmount = Math.min(remainingAmount, buyOrder.getAmount());
-            int matchPrice = buyOrder.getPrice();
-            int matchTotalPrice = matchPrice * matchAmount;
+        MatchResult matchResult = orderMatcher.match(request.getAmount(), buyOrders);
+
+        for (MatchItem match : matchResult.getMatches()) {
+            Order buyOrder = match.getCounterOrder();
+            int matchAmount = match.getMatchAmount();
+            int matchPrice = match.getMatchPrice();
+            int matchTotalPrice = match.getMatchTotalPrice();
 
             // 매수 주문 처리
             int buyOrderId;
-            if (matchAmount == buyOrder.getAmount()) {
+            if (match.isFullyMatched()) {
                 stockDetailRepository.setOrderStateMatched(buyOrder.getOrderId());
                 buyOrderId = buyOrder.getOrderId();
             } else {
@@ -217,12 +219,9 @@ public class StockOrderServiceImpl implements StockOrderService {
             stockDetailRepository.setStudentPointUp(matchTotalPrice, request.getStudentId());
 
             stockPriceHistoryRepository.upsertDailyPrice(request.getStockId(), LocalDate.now(), matchPrice, matchAmount);
-
-            remainingAmount -= matchAmount;
-            if (remainingAmount == 0) {
-                break;
-            }
         }
+
+        int remainingAmount = matchResult.getRemainingAmount();
 
         // 3. 남은 수량이 있으면 대기 등록
         if (remainingAmount > 0) {
