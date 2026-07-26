@@ -47,8 +47,8 @@ public class MemberController {
             return ApiResponse.error("로그인이 필요합니다.");
         }
         
-        // Return minimal for now, or fetch from DB if needed
-        return ApiResponse.success("내 정보 조회 성공", StudentResponse.builder().studentId(studentId).build());
+        StudentResponse response = memberService.getMemberInfo(studentId);
+        return ApiResponse.success("내 정보 조회 성공", response);
     }
 
     @GetMapping("/ranking")

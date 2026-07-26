@@ -13,4 +13,6 @@ public interface MemberService {
     boolean getIdCheck(String studentId);
     // 학생 랭킹 조회
     java.util.List<StudentRankingResponse> getStudentRanking();
+    // 내 정보 상세 조회
+    StudentResponse getMemberInfo(String studentId);
 }

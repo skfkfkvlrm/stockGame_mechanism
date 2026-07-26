@@ -115,12 +115,12 @@ class MemberControllerTest {
     @Test
     @DisplayName("내 정보 조회 테스트")
     void getMeSuccess() throws Exception {
-        // given (session is mocked or handled in controller)
-        // using mock session
+        // given
         StudentResponse info = StudentResponse.builder()
                 .studentId("student1")
                 .name("홍길동")
                 .build();
+        given(memberService.getMemberInfo("student1")).willReturn(info);
 
         // when & then
         mockMvc.perform(get("/api/members/me")

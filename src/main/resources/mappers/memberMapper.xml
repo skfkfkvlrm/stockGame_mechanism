@@ -17,7 +17,7 @@
 
     <!-- 아이디 단건 조회 -->
     <select id="findByStudentId" resultType="Map">
-        SELECT name, grade, class_name, total_point, password 
+        SELECT name, grade, class_name, class_number, total_point, password 
         FROM students 
         WHERE student_id = #{studentId}
     </select>
