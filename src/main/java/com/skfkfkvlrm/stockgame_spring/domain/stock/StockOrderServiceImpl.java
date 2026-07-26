@@ -25,18 +25,19 @@ public class StockOrderServiceImpl implements StockOrderService {
     private final StockPriceHistoryRepository stockPriceHistoryRepository;
     private final MarketSettingsRepository marketSettingsRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final OrderMatcher orderMatcher = new OrderMatcher();
 
     private void validateMarketOpen() {
         MarketSettings settings = marketSettingsRepository.findById(1).orElse(null);
         if (settings != null && !settings.isMarketOpen()) {
-            throw new IllegalStateException("현재 주식 시장이 폐장되었습니다.");
+            throw new com.skfkfkvlrm.stockgame_spring.exception.MarketClosedException();
         }
     }
 
     private void validateTickSize(int price) {
         int tickSize = getTickSize(price);
         if (price % tickSize != 0) {
-            throw new IllegalArgumentException("올바르지 않은 호가 단위입니다. 현재 가격대의 호가 단위는 " + tickSize + "원 입니다.");
+            throw new com.skfkfkvlrm.stockgame_spring.exception.InvalidTickSizeException();
         }
     }
 
@@ -66,7 +67,7 @@ public class StockOrderServiceImpl implements StockOrderService {
         // 1. 보유 포인트 확인
         int currentPoints = stockDetailRepository.getStudentPoint(request.getStudentId());
         if (currentPoints < totalOrderPrice) {
-            return "보유 포인트가 부족합니다";
+            throw new com.skfkfkvlrm.stockgame_spring.exception.InsufficientPointException();
         }
         // 2. 발행 정보 확인
         Map<String, Object> pubInfo = stockDetailRepository.getStockPubInfo(request.getStockId());
@@ -75,10 +76,10 @@ public class StockOrderServiceImpl implements StockOrderService {
         // a. 발행 주식 거래 (매수 가격이 발행가와 같을 때만)
         if (pubAmount > 0 && request.getPrice() >= pubPrice) {
             if (request.getPrice() > pubPrice) {
-                return "시스템에서 " + pubPrice + "원에 발행 중입니다. 더 비싸게 살 필요는 없겠죠?";
+                throw new com.skfkfkvlrm.stockgame_spring.exception.InvalidPublicationPriceException();
             }
             if (request.getAmount() > pubAmount) {
-                return "발행 잔량보다 많은 수량을 매수할 수 없습니다. (남은 수량: " + pubAmount +")";
+                throw new com.skfkfkvlrm.stockgame_spring.exception.ExceededPublicationBalanceException();
             }
 
             Order order = createOrder(request, OrderStatus.매수, OrderStatus.체결);
@@ -95,19 +96,21 @@ public class StockOrderServiceImpl implements StockOrderService {
             return "매수 주문이 체결되었습니다.";
         }
         // b. 학생 간 거래 (부분 체결 로직)
-        int remainingAmount = request.getAmount();
         // 매수 시 "매도" 대기열을 조회
         List<Order> sellOrders = stockDetailRepository.getMatchOrderList(
                 request.getStockId(), OrderStatus.매도.name(), request.getPrice(), request.getStudentId());
 
-        for (Order sellOrder : sellOrders) {
-            int matchAmount = Math.min(remainingAmount, sellOrder.getAmount());
-            int matchPrice = sellOrder.getPrice();
-            int matchTotalPrice = matchPrice * matchAmount;
+        MatchResult matchResult = orderMatcher.match(request.getAmount(), sellOrders);
+
+        for (MatchItem match : matchResult.getMatches()) {
+            Order sellOrder = match.getCounterOrder();
+            int matchAmount = match.getMatchAmount();
+            int matchPrice = match.getMatchPrice();
+            int matchTotalPrice = match.getMatchTotalPrice();
 
             // 매도 주문 처리
             int sellOrderId;
-            if (matchAmount == sellOrder.getAmount()) {
+            if (match.isFullyMatched()) {
                 stockDetailRepository.setOrderStateMatched(sellOrder.getOrderId());
                 sellOrderId = sellOrder.getOrderId();
             } else {
@@ -134,12 +137,9 @@ public class StockOrderServiceImpl implements StockOrderService {
             stockDetailRepository.setStudentPointUp(matchTotalPrice, sellOrder.getStudentId());
 
             stockPriceHistoryRepository.upsertDailyPrice(request.getStockId(), LocalDate.now(), matchPrice, matchAmount);
-
-            remainingAmount -= matchAmount;
-            if (remainingAmount == 0) {
-                break;
-            }
         }
+
+        int remainingAmount = matchResult.getRemainingAmount();
 
         // c. 남은 수량이 있으면 대기 등록
         if (remainingAmount > 0) {
@@ -175,23 +175,25 @@ public class StockOrderServiceImpl implements StockOrderService {
         // 1. 보유 주식 수량 검증
         int stockAmount = stockDetailRepository.getStudentStockAmount(request.getStockId(), request.getStudentId());
         if (request.getAmount() > stockAmount) {
-            return "보유 주식량보다 많은 매도 요청은 할 수 없습니다.";
+            throw new com.skfkfkvlrm.stockgame_spring.exception.InsufficientStockException();
         }
         int totalOrderPrice = request.getPrice() * request.getAmount();
         // 2. 학생 간 거래 (부분 체결 로직)
-        int remainingAmount = request.getAmount();
         // 매도 시 "매수" 대기열을 조회
         List<Order> buyOrders = stockDetailRepository.getMatchOrderList(
                 request.getStockId(), OrderStatus.매수.name(), request.getPrice(), request.getStudentId());
 
-        for (Order buyOrder : buyOrders) {
-            int matchAmount = Math.min(remainingAmount, buyOrder.getAmount());
-            int matchPrice = buyOrder.getPrice();
-            int matchTotalPrice = matchPrice * matchAmount;
+        MatchResult matchResult = orderMatcher.match(request.getAmount(), buyOrders);
+
+        for (MatchItem match : matchResult.getMatches()) {
+            Order buyOrder = match.getCounterOrder();
+            int matchAmount = match.getMatchAmount();
+            int matchPrice = match.getMatchPrice();
+            int matchTotalPrice = match.getMatchTotalPrice();
 
             // 매수 주문 처리
             int buyOrderId;
-            if (matchAmount == buyOrder.getAmount()) {
+            if (match.isFullyMatched()) {
                 stockDetailRepository.setOrderStateMatched(buyOrder.getOrderId());
                 buyOrderId = buyOrder.getOrderId();
             } else {
@@ -217,12 +219,9 @@ public class StockOrderServiceImpl implements StockOrderService {
             stockDetailRepository.setStudentPointUp(matchTotalPrice, request.getStudentId());
 
             stockPriceHistoryRepository.upsertDailyPrice(request.getStockId(), LocalDate.now(), matchPrice, matchAmount);
-
-            remainingAmount -= matchAmount;
-            if (remainingAmount == 0) {
-                break;
-            }
         }
+
+        int remainingAmount = matchResult.getRemainingAmount();
 
         // 3. 남은 수량이 있으면 대기 등록
         if (remainingAmount > 0) {

@@ -11,4 +11,8 @@ public interface MemberService {
     StudentResponse login(StudentLoginRequest request);
     // 아이디 중복체크
     boolean getIdCheck(String studentId);
+    // 학생 랭킹 조회
+    java.util.List<StudentRankingResponse> getStudentRanking();
+    // 내 정보 상세 조회
+    StudentResponse getMemberInfo(String studentId);
 }

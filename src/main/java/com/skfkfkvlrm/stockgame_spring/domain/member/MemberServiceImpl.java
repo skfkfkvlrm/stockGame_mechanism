@@ -65,4 +65,25 @@ public class MemberServiceImpl implements MemberService {
     public boolean getIdCheck(String studentId) {
         return memberRepository.getIdCheck(studentId) > 0;
     }
+
+    @Override
+    public java.util.List<StudentRankingResponse> getStudentRanking() {
+        return memberRepository.getStudentRanking();
+    }
+
+    @Override
+    public StudentResponse getMemberInfo(String studentId) {
+        Map<String, Object> savedData = memberRepository.findByStudentId(studentId);
+        if (savedData == null) {
+            throw new com.skfkfkvlrm.stockgame_spring.exception.InvalidCredentialsException();
+        }
+        return StudentResponse.builder()
+                .studentId(studentId)
+                .name((String) savedData.get("name"))
+                .grade(savedData.get("grade") != null ? ((Number) savedData.get("grade")).intValue() : 0)
+                .className((String) savedData.get("class_name"))
+                .classNumber(savedData.get("class_number") != null ? ((Number) savedData.get("class_number")).intValue() : 0)
+                .totalPoint(savedData.get("total_point") != null ? ((Number) savedData.get("total_point")).intValue() : 0)
+                .build();
+    }
 }

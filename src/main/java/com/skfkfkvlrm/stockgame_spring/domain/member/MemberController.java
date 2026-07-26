@@ -26,8 +26,8 @@ public class MemberController {
     public ApiResponse<StudentResponse> login(@RequestBody StudentLoginRequest request) {
         StudentResponse response = memberService.login(request);
         String token = jwtUtil.createToken(response.getStudentId());
-        // Return token in response header or body (putting in token field if exists, but StudentResponse might not have it. Let's just return a map or set a header)
-        return ApiResponse.success(token, response); // Using message field for token temporarily to avoid changing DTO
+        response.setToken(token);
+        return ApiResponse.success(token, response);
     }
 
     @PostMapping("/logout")
@@ -47,7 +47,13 @@ public class MemberController {
             return ApiResponse.error("로그인이 필요합니다.");
         }
         
-        // Return minimal for now, or fetch from DB if needed
-        return ApiResponse.success("내 정보 조회 성공", StudentResponse.builder().studentId(studentId).build());
+        StudentResponse response = memberService.getMemberInfo(studentId);
+        return ApiResponse.success("내 정보 조회 성공", response);
+    }
+
+    @GetMapping("/ranking")
+    public ApiResponse<java.util.List<StudentRankingResponse>> getStudentRanking() {
+        java.util.List<StudentRankingResponse> rankingList = memberService.getStudentRanking();
+        return ApiResponse.success("학생 랭킹 조회 성공", rankingList);
     }
 }

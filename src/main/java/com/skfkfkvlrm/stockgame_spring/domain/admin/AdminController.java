@@ -3,6 +3,8 @@ package com.skfkfkvlrm.stockgame_spring.domain.admin;
 import com.skfkfkvlrm.stockgame_spring.domain.common.ApiResponse;
 import com.skfkfkvlrm.stockgame_spring.domain.admin.MarketSettings;
 import com.skfkfkvlrm.stockgame_spring.domain.admin.MarketSettingsRepository;
+import com.skfkfkvlrm.stockgame_spring.domain.coupon.Coupon;
+import com.skfkfkvlrm.stockgame_spring.domain.stock.Stock;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -19,6 +22,7 @@ import java.util.Map;
 public class AdminController {
 
     private final MarketSettingsRepository marketSettingsRepository;
+    private final AdminService adminService;
 
     @GetMapping("/dashboard")
     public ApiResponse<Map<String, String>> dashboard(Authentication authentication) {
@@ -32,18 +36,18 @@ public class AdminController {
     }
 
     @GetMapping("/students")
-    public ApiResponse<String> students() {
-        return ApiResponse.success("Student list", "TODO: 학생 목록 데이터");
+    public ApiResponse<List<StudentAdminResponse>> students() {
+        return ApiResponse.success("Student list", adminService.getAllStudents());
     }
 
     @GetMapping("/stocks")
-    public ApiResponse<String> stocks() {
-        return ApiResponse.success("Stock list", "TODO: 종목 목록 데이터");
+    public ApiResponse<List<Stock>> stocks() {
+        return ApiResponse.success("Stock list", adminService.getAllStocks());
     }
 
     @GetMapping("/coupons")
-    public ApiResponse<String> coupons() {
-        return ApiResponse.success("Coupon list", "TODO: 쿠폰 목록 데이터");
+    public ApiResponse<List<Coupon>> coupons() {
+        return ApiResponse.success("Coupon list", adminService.getAllCoupons());
     }
 
     @GetMapping("/market/status")

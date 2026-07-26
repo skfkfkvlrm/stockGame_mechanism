@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace = "com.skfkfkvlrm.stockgame_spring.repository.MyAssetRepository">
+<mapper namespace="com.skfkfkvlrm.stockgame_spring.domain.point.MyAssetRepository">
 
 <select id = "getMyValue" parameterType ="map"  resultType="int">
 	 SELECT s.total_point + COALESCE(SUM(MY_VALUE.value), 0)

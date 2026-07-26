@@ -108,7 +108,7 @@ public class SecurityConfig {
         http
             .cors(org.springframework.security.config.Customizer.withDefaults()) // 전역 CORS 설정 적용
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/members/login", "/members/join", "/members/id-check").permitAll() // 로그인, 회원가입 등 공개
+                .requestMatchers("/api/members/login", "/api/members/join", "/api/members/id-check", "/members/login", "/members/join", "/members/id-check").permitAll() // 로그인, 회원가입 등 공개
                 .requestMatchers("/api/asset/**", "/api/stock/**", "/orders/**", "/coupons/**", "/history").authenticated() // API 보호
                 .anyRequest().permitAll()
             )

@@ -26,6 +26,36 @@ class MyPointHistoryControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
+    private com.skfkfkvlrm.stockgame_spring.auth.AppUserDetailsService appUserDetailsService;
+
+    @MockBean
+    private com.skfkfkvlrm.stockgame_spring.auth.JwtUtil jwtUtil;
+
+    @MockBean
+    private com.skfkfkvlrm.stockgame_spring.auth.JwtFilter jwtFilter;
+
+    @MockBean
+    private com.skfkfkvlrm.stockgame_spring.domain.member.MemberRepository memberRepository;
+
+    @MockBean
+    private com.skfkfkvlrm.stockgame_spring.domain.stock.StockListRepository stockListRepository;
+
+    @MockBean
+    private com.skfkfkvlrm.stockgame_spring.domain.coupon.CouponRepository couponRepository;
+
+    @MockBean
+    private com.skfkfkvlrm.stockgame_spring.domain.stock.StockDetailRepository stockDetailRepository;
+
+    @MockBean
+    private com.skfkfkvlrm.stockgame_spring.domain.stock.StockPriceHistoryRepository stockPriceHistoryRepository;
+
+    @MockBean
+    private com.skfkfkvlrm.stockgame_spring.domain.point.MyAssetRepository myAssetRepository;
+
+    @MockBean
+    private com.skfkfkvlrm.stockgame_spring.domain.news.NewsRepository newsRepository;
+
+    @MockBean
     private MyPointHistoryRepository pointHistoryRepository;
 
     @Test
@@ -40,7 +70,7 @@ class MyPointHistoryControllerTest {
 
         // when & then
         mockMvc.perform(get("/api/history")
-                .sessionAttr("studentId", "student1"))
+                .requestAttr("studentId", "student1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].historyType").value("출석"))

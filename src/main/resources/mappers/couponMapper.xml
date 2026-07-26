@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.skfkfkvlrm.stockgame_spring.repository.CouponRepository">
+<mapper namespace="com.skfkfkvlrm.stockgame_spring.domain.coupon.CouponRepository">
 
 	<!-- 만들어져있는 쿠폰 모두 조회 -->
-	<select id="getCouponList" resultType="com.skfkfkvlrm.stockgame_spring.domain.Coupon">
+	<select id="getCouponList" resultType="com.skfkfkvlrm.stockgame_spring.domain.coupon.Coupon">
 		SELECT coupon_id, name, price FROM coupons
 	</select>
 	
@@ -25,7 +25,7 @@
 	</update>
 	
 	<!-- 나의 보유 쿠폰 조회 -->
-	<select id="getMyCouponList" parameterType="String" resultType="com.skfkfkvlrm.stockgame_spring.domain.CouponPurchase">
+	<select id="getMyCouponList" parameterType="String" resultType="com.skfkfkvlrm.stockgame_spring.domain.coupon.CouponPurchase">
 		SELECT cp.name, cp.price, cp.state, cp.created_date as createdDate
 		FROM coupon_purchase cp 
 		INNER JOIN coupons c ON cp.coupon_id = c.coupon_id
