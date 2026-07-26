@@ -1,11 +1,12 @@
 package com.skfkfkvlrm.stockgame_spring.domain.member;
 
+import com.skfkfkvlrm.stockgame_spring.domain.common.ApiResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.SessionAttribute;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,35 +15,34 @@ import java.util.Map;
 public class AuthApiController {
 
     @GetMapping("/status")
-    public Map<String, Object> status(
+    public ApiResponse<Map<String, Object>> status(
             @org.springframework.web.bind.annotation.RequestAttribute(name = "studentId", required = false) String studentId) {
         
-        Map<String, Object> response = new HashMap<>();
+        Map<String, Object> responseData = new HashMap<>();
 
         // 1. 관리자 권한 확인 (Spring Security)
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
-            response.put("isAuthenticated", true);
-            response.put("username", auth.getName());
-            // Safe fallback if no authority
+            responseData.put("isAuthenticated", true);
+            responseData.put("username", auth.getName());
             if (!auth.getAuthorities().isEmpty()) {
-                response.put("role", auth.getAuthorities().iterator().next().getAuthority());
+                responseData.put("role", auth.getAuthorities().iterator().next().getAuthority());
             } else {
-                response.put("role", "ROLE_STUDENT");
+                responseData.put("role", "ROLE_STUDENT");
             }
-            return response;
+            return ApiResponse.success("인증 상태 조회 성공", responseData);
         }
 
         // 2. 학생 권한 확인 (JWT via RequestAttribute)
         if (studentId != null) {
-            response.put("isAuthenticated", true);
-            response.put("username", studentId);
-            response.put("role", "ROLE_STUDENT");
-            return response;
+            responseData.put("isAuthenticated", true);
+            responseData.put("username", studentId);
+            responseData.put("role", "ROLE_STUDENT");
+            return ApiResponse.success("인증 상태 조회 성공", responseData);
         }
 
         // 3. 비로그인 상태
-        response.put("isAuthenticated", false);
-        return response;
+        responseData.put("isAuthenticated", false);
+        return ApiResponse.success("비로그인 상태", responseData);
     }
 }
