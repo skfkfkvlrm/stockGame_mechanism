@@ -3,7 +3,7 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.skfkfkvlrm.stockgame_spring.repository.StockPriceHistoryRepository">
+<mapper namespace="com.skfkfkvlrm.stockgame_spring.domain.stock.StockPriceHistoryRepository">
 
     <insert id="upsertDailyPrice">
         INSERT INTO stock_price_history
@@ -18,7 +18,7 @@
             updated_date = NOW()
     </insert>
 
-    <select id="findHistoryByStockId" resultType="com.skfkfkvlrm.stockgame_spring.domain.StockPriceHistory">
+    <select id="findHistoryByStockId" resultType="com.skfkfkvlrm.stockgame_spring.domain.stock.StockPriceHistory">
         SELECT 
             history_id as historyId,
             stock_id as stockId,

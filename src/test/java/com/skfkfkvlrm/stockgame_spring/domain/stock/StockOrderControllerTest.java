@@ -29,6 +29,39 @@ class StockOrderControllerTest {
     private ObjectMapper objectMapper;
 
     @MockBean
+    private com.skfkfkvlrm.stockgame_spring.auth.AppUserDetailsService appUserDetailsService;
+
+    @MockBean
+    private com.skfkfkvlrm.stockgame_spring.auth.JwtUtil jwtUtil;
+
+    @MockBean
+    private com.skfkfkvlrm.stockgame_spring.auth.JwtFilter jwtFilter;
+
+    @MockBean
+    private com.skfkfkvlrm.stockgame_spring.domain.member.MemberRepository memberRepository;
+
+    @MockBean
+    private com.skfkfkvlrm.stockgame_spring.domain.stock.StockListRepository stockListRepository;
+
+    @MockBean
+    private com.skfkfkvlrm.stockgame_spring.domain.coupon.CouponRepository couponRepository;
+
+    @MockBean
+    private com.skfkfkvlrm.stockgame_spring.domain.stock.StockDetailRepository stockDetailRepository;
+
+    @MockBean
+    private com.skfkfkvlrm.stockgame_spring.domain.stock.StockPriceHistoryRepository stockPriceHistoryRepository;
+
+    @MockBean
+    private com.skfkfkvlrm.stockgame_spring.domain.point.MyAssetRepository myAssetRepository;
+
+    @MockBean
+    private com.skfkfkvlrm.stockgame_spring.domain.point.MyPointHistoryRepository myPointHistoryRepository;
+
+    @MockBean
+    private com.skfkfkvlrm.stockgame_spring.domain.news.NewsRepository newsRepository;
+
+    @MockBean
     private StockOrderService stockOrderService;
 
     @Test
@@ -44,7 +77,7 @@ class StockOrderControllerTest {
 
         // when & then
         mockMvc.perform(post("/api/orders/buy")
-                .sessionAttr("studentId", "student1")
+                .requestAttr("studentId", "student1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())

@@ -21,4 +21,7 @@ public interface MemberRepository {
 
     // 아이디 중복체크
     int getIdCheck(String studentId);
+
+    // 관리자용 전체 학생 목록 조회
+    java.util.List<com.skfkfkvlrm.stockgame_spring.domain.admin.StudentAdminResponse> getAllStudents();
 }

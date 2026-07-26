@@ -2,10 +2,10 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.skfkfkvlrm.stockgame_spring.repository.MemberRepository">
+<mapper namespace="com.skfkfkvlrm.stockgame_spring.domain.member.MemberRepository">
 
     <!-- 회원가입 -->
-    <insert id="setMember" parameterType="com.skfkfkvlrm.stockgame_spring.controller.dto.request.StudentJoinRequest">
+    <insert id="setMember" parameterType="com.skfkfkvlrm.stockgame_spring.domain.member.StudentJoinRequest">
         INSERT INTO students (student_id, password, name, grade, class_name, class_number, register_year, total_coupon, total_point, created_date)
         VALUES (#{studentId}, #{password}, #{name}, #{grade}, #{className}, #{classNumber}, YEAR(NOW()), 0, 30000, NOW())
     </insert>
@@ -32,6 +32,13 @@
     <!-- 아이디 중복체크 -->
     <select id="getIdCheck" parameterType="String" resultType="int">
         SELECT COUNT(*) FROM students WHERE student_id = #{studentId}
+    </select>
+
+    <!-- 전체 학생 목록 조회 (관리자용) -->
+    <select id="getAllStudents" resultType="com.skfkfkvlrm.stockgame_spring.domain.admin.StudentAdminResponse">
+        SELECT id, student_id AS studentId, name, grade, class_name AS className, class_number AS classNumber, total_point AS totalPoint, total_coupon AS totalCoupon
+        FROM students
+        ORDER BY id ASC
     </select>
 
 </mapper>

@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.skfkfkvlrm.stockgame_spring.repository.StockListRepository">
-	<select id="getStockNameList" resultType="com.skfkfkvlrm.stockgame_spring.domain.Stock">
+<mapper namespace="com.skfkfkvlrm.stockgame_spring.domain.stock.StockListRepository">
+	<select id="getStockNameList" resultType="com.skfkfkvlrm.stockgame_spring.domain.stock.Stock">
 		SELECT stock_id, name FROM stocks ORDER BY stock_id
+	</select>
+
+	<select id="getAllStocks" resultType="com.skfkfkvlrm.stockgame_spring.domain.stock.Stock">
+		SELECT stock_id AS stockId, name, content, publication_balance AS publicationBalance, publication_price AS publicationPrice, prev_price AS prevPrice
+		FROM stocks
+		ORDER BY stock_id ASC
 	</select>
 </mapper>
