@@ -26,8 +26,8 @@ public class MemberController {
     public ApiResponse<StudentResponse> login(@RequestBody StudentLoginRequest request) {
         StudentResponse response = memberService.login(request);
         String token = jwtUtil.createToken(response.getStudentId());
-        // Return token in response header or body (putting in token field if exists, but StudentResponse might not have it. Let's just return a map or set a header)
-        return ApiResponse.success(token, response); // Using message field for token temporarily to avoid changing DTO
+        response.setToken(token);
+        return ApiResponse.success(token, response);
     }
 
     @PostMapping("/logout")

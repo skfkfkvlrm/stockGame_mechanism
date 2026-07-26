@@ -14,4 +14,5 @@ public class StudentResponse {
     private String className;
     private int classNumber;
     private int totalPoint;
+    private String token;
 }
