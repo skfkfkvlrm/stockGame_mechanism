@@ -14,4 +14,13 @@ public interface StockListRepository {
 
     // 전체 주식 목록 조회 (관리자용)
     List<Stock> getAllStocks();
+
+    // 주식 신규 등록
+    int insertStock(com.skfkfkvlrm.stockgame_spring.domain.admin.StockRequest request);
+
+    // 주식 정보 수정
+    int updateStock(@org.apache.ibatis.annotations.Param("stockId") int stockId, @org.apache.ibatis.annotations.Param("request") com.skfkfkvlrm.stockgame_spring.domain.admin.StockRequest request);
+
+    // 주식 삭제/상장폐지
+    int deleteStock(int stockId);
 }

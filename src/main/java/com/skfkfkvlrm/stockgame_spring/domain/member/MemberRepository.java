@@ -27,4 +27,10 @@ public interface MemberRepository {
 
     // 학생 총 포인트 순위 목록 조회
     java.util.List<StudentRankingResponse> getStudentRanking();
+
+    // 포인트 지급/차감
+    int updateStudentPoint(@org.apache.ibatis.annotations.Param("studentId") String studentId, @org.apache.ibatis.annotations.Param("amount") int amount);
+
+    // 포인트 지급/차감 이력 생성
+    int insertPointHistory(@org.apache.ibatis.annotations.Param("studentId") String studentId, @org.apache.ibatis.annotations.Param("amount") int amount, @org.apache.ibatis.annotations.Param("reason") String reason);
 }

@@ -10,4 +10,22 @@
 		FROM stocks
 		ORDER BY stock_id ASC
 	</select>
+
+	<insert id="insertStock">
+		INSERT INTO stocks (name, content, publication_price, publication_balance, prev_price)
+		VALUES (#{name}, #{content}, #{publicationPrice}, #{publicationBalance}, #{publicationPrice})
+	</insert>
+
+	<update id="updateStock">
+		UPDATE stocks
+		SET name = #{request.name},
+		    content = #{request.content},
+		    publication_price = #{request.publicationPrice},
+		    publication_balance = #{request.publicationBalance}
+		WHERE stock_id = #{stockId}
+	</update>
+
+	<delete id="deleteStock">
+		DELETE FROM stocks WHERE stock_id = #{stockId}
+	</delete>
 </mapper>

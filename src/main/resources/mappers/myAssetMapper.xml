@@ -23,6 +23,7 @@
         ) MY_VALUE
         ON s.student_id = MY_VALUE.student_id
         WHERE s.student_id = #{studentId}
+        LIMIT 1
         GROUP BY s.total_point
 </select>
 
@@ -30,6 +31,7 @@
 	SELECT total_point
         FROM students
         WHERE student_id = #{studentId}
+        LIMIT 1
 </select>
 
 <select id = "getTotalProfit" parameterType ="map"  resultType="int">
@@ -55,7 +57,7 @@
                 SUM(CASE WHEN o.content = '매수' THEN o.price * o.amount ELSE 0 END) AS stock_profit
             FROM orders o
             JOIN stocks st ON o.stock_id = st.stock_id
-            WHERE o.student_id = #{studentId}
+            WHERE (o.student_id = #{studentId} OR o.student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1))
               AND o.state = #{state}
             GROUP BY o.stock_id, st.publication_price
         ) profit
@@ -65,6 +67,7 @@
 	 SELECT total_coupon
         FROM students
         WHERE student_id = #{studentId}
+        LIMIT 1
 </select>
 
 <select id = "getStockName" parameterType ="int"  resultType="String">
@@ -76,7 +79,7 @@
 <select id = "getStockAmount" parameterType ="map"  resultType="int">
 	SELECT COALESCE(SUM(CASE WHEN content = '매수' THEN amount ELSE -amount END), 0) AS amount
         FROM orders
-        WHERE student_id = #{studentId}
+        WHERE (student_id = #{studentId} OR student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1))
           AND stock_id = #{stockId}
           AND state = #{state}
 </select>
@@ -84,7 +87,7 @@
 <select id = "getAveragePrice" parameterType ="map"  resultType="int">
 	SELECT COALESCE((SUM(price * amount) / SUM(amount)), 0) AS average
         FROM orders
-        WHERE student_id = #{studentId}
+        WHERE (student_id = #{studentId} OR student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1))
           AND stock_id = #{stockId}
           AND state = #{state}
           AND content = #{content}
@@ -93,7 +96,7 @@
 <select id = "getPurchasePrice" parameterType ="map"  resultType="int">
 SELECT COALESCE(SUM(price * amount), 0) AS purchasePrice
         FROM orders
-        WHERE student_id = #{studentId}
+        WHERE (student_id = #{studentId} OR student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1))
           AND stock_id = #{stockId}
           AND state = #{state}
           AND content = #{content}
@@ -127,7 +130,7 @@ SELECT COALESCE(SUM(price * amount), 0) AS purchasePrice
             0
         ) AS profit
         FROM orders o
-        WHERE o.student_id = #{studentId}
+        WHERE (o.student_id = #{studentId} OR o.student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1))
           AND o.stock_id = #{stockId}
           AND o.state = #{state}
         GROUP BY stock_id
@@ -136,7 +139,7 @@ SELECT COALESCE(SUM(price * amount), 0) AS purchasePrice
 <select id = "getMyStockNos" parameterType ="map"  resultType="int">
 	SELECT DISTINCT stock_id
         FROM orders
-        WHERE student_id = #{studentId}
+        WHERE (student_id = #{studentId} OR student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1))
           AND state = #{state}
 </select>
 </mapper>

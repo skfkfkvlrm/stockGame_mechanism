@@ -88,26 +88,33 @@ public class DataInitializer implements ApplicationRunner {
                 // Ignore if column does not exist
             }
 
-            // Clean up duplicates if any
+            // Clean up duplicates if any (keep latest record)
             try {
+                jdbcTemplate.update("DELETE s1 FROM students s1 INNER JOIN students s2 WHERE s1.id < s2.id AND s1.student_id = s2.student_id");
                 jdbcTemplate.update("DELETE FROM stocks WHERE stock_id > 3");
                 jdbcTemplate.update("DELETE FROM coupons WHERE coupon_id > 4");
                 jdbcTemplate.update("DELETE FROM news WHERE news_id > 5");
-                jdbcTemplate.update("DELETE FROM students WHERE id > 3");
-                jdbcTemplate.update("DELETE FROM app_users WHERE id > 3");
             } catch (Exception e) {
                 log.warn("Cleanup error: " + e.getMessage());
             }
 
-            // Students
-            Integer studentCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM students", Integer.class);
-            if (studentCount != null && studentCount == 0) {
+            // Students (BCrypt 암호화 및 ON DUPLICATE KEY UPDATE 적용)
+            String encodedAbc = passwordEncoder.encode("abc123!");
+            String encodedDef = passwordEncoder.encode("def123!");
+            String encodedKim = passwordEncoder.encode("dldlsghk123!");
+
+            try {
+                jdbcTemplate.update("DELETE s1 FROM students s1 INNER JOIN students s2 WHERE s1.id < s2.id AND s1.student_id = s2.student_id");
                 jdbcTemplate.update(
-                        "INSERT IGNORE INTO students (student_id, password, name, grade, class_name, class_number, register_year, total_coupon, total_point, created_date) VALUES "
-                                +
-                                "('abc', 'abc123!', '홍길동', 5, '4', 63, 2026, 0, 30000, NOW()), " +
-                                "('def', 'def123!', '이순신', 5, '4', 9, 2026, 0, 30000, NOW()), " +
-                                "('dldlsghk123', 'dldlsghk123!', '김철수', 6, '가', 63, 2026, 0, 8000, NOW())");
+                        "INSERT INTO students (student_id, password, name, grade, class_name, class_number, register_year, total_coupon, total_point, created_date) VALUES "
+                                + "(?, ?, '홍길동', 5, '4', 63, 2026, 0, 30000, NOW()), "
+                                + "(?, ?, '이순신', 5, '4', 9, 2026, 0, 30000, NOW()), "
+                                + "(?, ?, '김철수', 6, '가', 63, 2026, 0, 8000, NOW()) "
+                                + "ON DUPLICATE KEY UPDATE password = VALUES(password)",
+                        "abc", encodedAbc, "def", encodedDef, "dldlsghk123", encodedKim);
+                log.info("[DataInitializer] 기본 학생 계정(abc, def, dldlsghk123) 동기화 완료");
+            } catch (Exception e) {
+                log.warn("[DataInitializer] 학생 더미 데이터 동기화 예외: {}", e.getMessage());
             }
 
             // Stocks

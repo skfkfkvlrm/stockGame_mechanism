@@ -33,11 +33,12 @@ public class AuthApiController {
             return ApiResponse.success("인증 상태 조회 성공", responseData);
         }
 
-        // 2. 학생 권한 확인 (JWT via RequestAttribute)
+        // 2. 학생 및 관리자 권한 확인 (JWT via RequestAttribute)
         if (studentId != null) {
             responseData.put("isAuthenticated", true);
             responseData.put("username", studentId);
-            responseData.put("role", "ROLE_STUDENT");
+            String role = "admin".equals(studentId) ? "ROLE_ADMIN" : ("manager".equals(studentId) ? "ROLE_MANAGER" : "ROLE_STUDENT");
+            responseData.put("role", role);
             return ApiResponse.success("인증 상태 조회 성공", responseData);
         }
 

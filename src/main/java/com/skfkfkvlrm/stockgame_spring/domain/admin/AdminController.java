@@ -7,8 +7,10 @@ import com.skfkfkvlrm.stockgame_spring.domain.coupon.Coupon;
 import com.skfkfkvlrm.stockgame_spring.domain.stock.Stock;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -71,5 +73,39 @@ public class AdminController {
         Map<String, Object> data = new HashMap<>();
         data.put("marketOpen", settings.isMarketOpen());
         return ApiResponse.success("Market status toggled", data);
+    }
+
+    @PostMapping("/students/{studentId}/point")
+    public ApiResponse<Boolean> adjustPoint(
+            @org.springframework.web.bind.annotation.PathVariable("studentId") String studentId,
+            @org.springframework.web.bind.annotation.RequestBody PointAdjustmentRequest request) {
+        adminService.adjustStudentPoint(studentId, request.getAmount(), request.getReason());
+        return ApiResponse.success("학생 포인트가 성공적으로 반영되었습니다.", true);
+    }
+
+    @GetMapping("/students/{studentId}/detail")
+    public ApiResponse<Map<String, Object>> getStudentDetail(
+            @org.springframework.web.bind.annotation.PathVariable("studentId") String studentId) {
+        return ApiResponse.success("Student detail info", adminService.getStudentDetail(studentId));
+    }
+
+    @PostMapping("/stocks")
+    public ApiResponse<Boolean> createStock(@org.springframework.web.bind.annotation.RequestBody StockRequest request) {
+        adminService.createStock(request);
+        return ApiResponse.success("신규 주식 종목이 성공적으로 상장되었습니다.", true);
+    }
+
+    @PutMapping("/stocks/{stockId}")
+    public ApiResponse<Boolean> updateStock(
+            @org.springframework.web.bind.annotation.PathVariable("stockId") int stockId,
+            @org.springframework.web.bind.annotation.RequestBody StockRequest request) {
+        adminService.updateStock(stockId, request);
+        return ApiResponse.success("주식 종목 정보가 성공적으로 수정되었습니다.", true);
+    }
+
+    @DeleteMapping("/stocks/{stockId}")
+    public ApiResponse<Boolean> deleteStock(@org.springframework.web.bind.annotation.PathVariable("stockId") int stockId) {
+        adminService.deleteStock(stockId);
+        return ApiResponse.success("주식 종목이 성공적으로 상장폐지(삭제)되었습니다.", true);
     }
 }
