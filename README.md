@@ -103,16 +103,6 @@ src/main/java/com/skfkfkvlrm/stockgame_spring/
 
 ---
 
-## 🌿 Git 브랜치 전략
-
-| 브랜치 | 설명 |
-|---|---|
-| `main` | 안정화 릴리즈 브랜치 |
-| `feature/admin-student-management` | 학생 관리·포인트 조정·포트폴리오 API (→ [PR #37](https://github.com/skfkfkvlrm/stockGame_spring/pull/37)) |
-| `feature/admin-stock-management` | 주식 종목 CRUD·시장 개장/휴장 API (→ [PR #38](https://github.com/skfkfkvlrm/stockGame_spring/pull/38)) |
-
----
-
 ## 📋 최근 변경 이력 (Changelog)
 
 | 날짜 | 내용 |
