@@ -282,8 +282,8 @@ public class StockOrderServiceImpl implements StockOrderService {
             throw new com.skfkfkvlrm.stockgame_spring.exception.InvalidOrderStateException();
         }
         // 4. 매수 취소 시 포인트 환불
-        // order.getContent()는 DB에 한국어("매수")로 저장되므로 OrderStatus enum 이름으로 비교해야 함
-        if (OrderStatus.매수.name().equals(order.getContent())) {
+        String contentStr = order.getContent() != null ? order.getContent().toString() : "";
+        if ("매수".equals(contentStr) || OrderStatus.매수.name().equals(contentStr)) {
             int refundAmount = order.getPrice() * order.getAmount();
             stockDetailRepository.setStudentPointUp(refundAmount, studentId);
         }

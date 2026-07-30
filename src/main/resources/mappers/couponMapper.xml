@@ -9,13 +9,13 @@
 	
 	<!-- 나의 가용포인트 조회 -->
 	<select id="getStudentPoint" parameterType="String" resultType="int">
-		SELECT total_point FROM students WHERE student_id = #{studentId}
+		SELECT total_point FROM students WHERE student_id = #{studentId} LIMIT 1
 	</select>
 	
 	<!-- 쿠폰 구매 (쿠폰구매내역 추가) -->
 	<insert id="setPurchaseRecord">
 		INSERT INTO coupon_purchase (price, name, state, created_date, student_id, coupon_id)
-		VALUES(#{couponPrice}, #{couponName}, #{state}, NOW(), (SELECT id FROM students WHERE student_id = #{studentId}), #{couponId})
+		VALUES(#{couponPrice}, #{couponName}, #{state}, NOW(), (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1), #{couponId})
 	</insert>
 	
 	<!-- 쿠폰 구매시 학생의 가용포인트 차감 및 보유쿠폰 개수 업데이트(가용포인트 부족시 구매 불가) -->
@@ -29,11 +29,11 @@
 		SELECT cp.name, cp.price, cp.state, cp.created_date as createdDate
 		FROM coupon_purchase cp 
 		INNER JOIN coupons c ON cp.coupon_id = c.coupon_id
-		WHERE cp.student_id = (SELECT id FROM students WHERE student_id = #{studentId})
+		WHERE cp.student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
 	</select>
 	
 	<!-- 내가 구매한 쿠폰 수량 -->
 	<select id="getMyCouponCount" parameterType="String" resultType="int">
-		SELECT COUNT(coupon_id) FROM coupon_purchase WHERE student_id = (SELECT id FROM students WHERE student_id = #{studentId})
+		SELECT COUNT(coupon_id) FROM coupon_purchase WHERE student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
 	</select>
 </mapper>

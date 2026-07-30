@@ -6,13 +6,25 @@
 		SELECT history_date, history_type, history_content, point_change 
             FROM ( 
 
+                (SELECT 
+                    created_date AS history_date,
+                    '지급' AS history_type, 
+                    '기초 회원가입 지원 포인트' AS history_content, 
+                    30000 AS point_change 
+                FROM students 
+                WHERE student_id = #{studentId}
+                ORDER BY id ASC
+                LIMIT 1)
+
+                UNION ALL 
+
                 SELECT 
                     cp.created_date AS history_date,
                     '쿠폰' AS history_type, 
                     cp.name AS history_content, 
                     -cp.price AS point_change 
                 FROM coupon_purchase cp
-                WHERE cp.student_id = (SELECT id FROM students WHERE student_id = #{studentId})
+                WHERE cp.student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
 
                 UNION ALL 
 
@@ -22,7 +34,7 @@
                     gp.content AS history_content, 
                     gp.point AS point_change 
                 FROM get_points gp
-                WHERE gp.student_id = (SELECT id FROM students WHERE student_id = #{studentId})
+                WHERE gp.student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
 
                 UNION ALL 
 
@@ -34,7 +46,7 @@
                 FROM stock_transactions t
                 JOIN orders o ON t.buy_order_id = o.order_id
                 JOIN stocks s ON o.stock_id = s.stock_id
-                WHERE o.student_id = (SELECT id FROM students WHERE student_id = #{studentId})
+                WHERE o.student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
 
                 UNION ALL 
 
@@ -46,7 +58,31 @@
                 FROM stock_transactions t
                 JOIN orders o ON t.sell_order_id = o.order_id
                 JOIN stocks s ON o.stock_id = s.stock_id
-                WHERE o.student_id = (SELECT id FROM students WHERE student_id = #{studentId})
+                WHERE o.student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
+
+                UNION ALL 
+
+                SELECT 
+                    o.created_date AS history_date,
+                    '매수예약' AS history_type, 
+                    CONCAT(s.name, ' 매수 예약') AS history_content, 
+                    -(o.price * o.amount) AS point_change 
+                FROM orders o
+                JOIN stocks s ON o.stock_id = s.stock_id
+                WHERE o.student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
+                  AND o.content = '매수' AND o.state = '대기'
+
+                UNION ALL 
+
+                SELECT 
+                    o.created_date AS history_date,
+                    '주문취소' AS history_type, 
+                    CONCAT(s.name, ' 매수 취소 (환불)') AS history_content, 
+                    (o.price * o.amount) AS point_change 
+                FROM orders o
+                JOIN stocks s ON o.stock_id = s.stock_id
+                WHERE o.student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
+                  AND o.content = '매수' AND o.state = '취소'
 
             ) history
            ORDER BY history_date DESC
