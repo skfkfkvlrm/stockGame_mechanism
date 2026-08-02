@@ -26,6 +26,12 @@ public class StockDetailController {
         return ApiResponse.success("Stock list", list);
     }
 
+    @GetMapping("/market-index")
+    public ApiResponse<java.util.List<MarketIndexResponse>> getMarketIndices() {
+        java.util.List<MarketIndexResponse> indices = stockDetailService.getMarketIndices();
+        return ApiResponse.success("Market indices", indices);
+    }
+
     @GetMapping("/{stockId}")
     public ApiResponse<StockDetailResponse> getStockDetail(
             @PathVariable("stockId") int stockId,

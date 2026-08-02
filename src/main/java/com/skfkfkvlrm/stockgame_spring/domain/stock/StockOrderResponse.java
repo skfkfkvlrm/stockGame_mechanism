@@ -18,4 +18,12 @@ public class StockOrderResponse {
     private int price;
     private int amount;
     private OrderStatus state;
+
+    public String getStudentId() { return studentId; }
+    public int getOrderId() { return orderId; }
+    public int getStockId() { return stockId; }
+    public String getContent() { return content; }
+    public int getPrice() { return price; }
+    public int getAmount() { return amount; }
+    public OrderStatus getState() { return state; }
 }

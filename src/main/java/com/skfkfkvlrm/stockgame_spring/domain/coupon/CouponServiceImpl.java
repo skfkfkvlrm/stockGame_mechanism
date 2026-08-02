@@ -43,4 +43,16 @@ public class CouponServiceImpl implements CouponService {
         // 3. 쿠폰 구매 정보 구매내역에 추가
         couponRepository.setPurchaseRecord(studentId, couponId, couponName, couponPrice, CouponPurchaseStatus.사용전);
     }
+
+    @Override
+    @Transactional
+    public void useCoupon(int couponPurchaseId, String studentId) {
+        // UPDATE 결과가 0이면 → 본인 소유가 아니거나 이미 사용된 쿠폰
+        int updatedRows = couponRepository.useCoupon(couponPurchaseId, studentId);
+        if (updatedRows == 0) {
+            throw new com.skfkfkvlrm.stockgame_spring.exception.StockGameException(
+                com.skfkfkvlrm.stockgame_spring.exception.ErrorCode.COUPON_ALREADY_USED
+            );
+        }
+    }
 }

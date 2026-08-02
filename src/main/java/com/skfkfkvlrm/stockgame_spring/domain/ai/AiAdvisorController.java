@@ -2,8 +2,10 @@ package com.skfkfkvlrm.stockgame_spring.domain.ai;
 
 import com.skfkfkvlrm.stockgame_spring.domain.common.ApiResponse;
 import com.skfkfkvlrm.stockgame_spring.domain.ai.AiAdvisorService;
+import com.skfkfkvlrm.stockgame_spring.exception.UnauthorizedAccessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,7 +18,12 @@ public class AiAdvisorController {
     private final AiAdvisorService aiAdvisorService;
 
     @GetMapping("/advisor")
-    public ApiResponse<String> getAdvisorMessage(@RequestParam("stockId") int stockId) {
+    public ApiResponse<String> getAdvisorMessage(
+            @RequestParam("stockId") int stockId,
+            @RequestAttribute(name = "studentId", required = false) String studentId) {
+        if (studentId == null) {
+            throw new UnauthorizedAccessException();
+        }
         try {
             String message = aiAdvisorService.getAdvisorMessage(stockId);
             return ApiResponse.success("조언 생성 성공", message);
@@ -25,3 +32,4 @@ public class AiAdvisorController {
         }
     }
 }
+

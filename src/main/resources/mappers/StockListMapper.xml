@@ -6,14 +6,14 @@
 	</select>
 
 	<select id="getAllStocks" resultType="com.skfkfkvlrm.stockgame_spring.domain.stock.Stock">
-		SELECT stock_id AS stockId, name, content, publication_balance AS publicationBalance, publication_price AS publicationPrice, prev_price AS prevPrice
+		SELECT stock_id AS stockId, name, content, publication_balance AS publicationBalance, publication_price AS publicationPrice, prev_price AS prevPrice, COALESCE(status, 'LISTED') AS status
 		FROM stocks
 		ORDER BY stock_id ASC
 	</select>
 
 	<insert id="insertStock">
-		INSERT INTO stocks (name, content, publication_price, publication_balance, prev_price)
-		VALUES (#{name}, #{content}, #{publicationPrice}, #{publicationBalance}, #{publicationPrice})
+		INSERT INTO stocks (name, content, publication_price, publication_balance, prev_price, status)
+		VALUES (#{name}, #{content}, #{publicationPrice}, #{publicationBalance}, #{publicationPrice}, COALESCE(#{status}, 'LISTED'))
 	</insert>
 
 	<update id="updateStock">
@@ -21,7 +21,8 @@
 		SET name = #{request.name},
 		    content = #{request.content},
 		    publication_price = #{request.publicationPrice},
-		    publication_balance = #{request.publicationBalance}
+		    publication_balance = #{request.publicationBalance},
+		    status = COALESCE(#{request.status}, 'LISTED')
 		WHERE stock_id = #{stockId}
 	</update>
 

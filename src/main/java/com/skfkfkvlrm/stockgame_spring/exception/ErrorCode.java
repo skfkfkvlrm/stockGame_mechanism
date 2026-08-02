@@ -4,8 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
-@Getter
-@AllArgsConstructor
 public enum ErrorCode {
     // 400 Bad Request
     INSUFFICIENT_POINT(HttpStatus.BAD_REQUEST, "포인트가 부족합니다."),
@@ -16,6 +14,7 @@ public enum ErrorCode {
     INVALID_TICK_SIZE(HttpStatus.BAD_REQUEST, "올바르지 않은 호가 단위입니다."),
     EXCEEDED_PUBLICATION_BALANCE(HttpStatus.BAD_REQUEST, "발행 잔량보다 많은 수량을 매수할 수 없습니다."),
     INVALID_PUBLICATION_PRICE(HttpStatus.BAD_REQUEST, "시스템 발행 가격보다 높은 가격으로 주문할 수 없습니다."),
+    COUPON_ALREADY_USED(HttpStatus.BAD_REQUEST, "이미 사용된 쿠폰이거나 본인 소유 쿠폰이 아닙니다."),
     
     // 401 Unauthorized
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다."),
@@ -35,4 +34,12 @@ public enum ErrorCode {
 
     private final HttpStatus status;
     private final String message;
+
+    ErrorCode(HttpStatus status, String message) {
+        this.status = status;
+        this.message = message;
+    }
+
+    public HttpStatus getStatus() { return status; }
+    public String getMessage() { return message; }
 }

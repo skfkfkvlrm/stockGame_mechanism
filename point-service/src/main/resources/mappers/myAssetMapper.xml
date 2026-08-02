@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.skfkfkvlrm.pointservice.domain.point.MyAssetRepository">
+
+    <select id="getStudentAssetInfo" resultType="Map">
+        SELECT total_point, total_coupon
+        FROM students
+        WHERE student_id = #{studentId}
+        LIMIT 1
+    </select>
+
+    <select id="getStudentPoint" resultType="java.lang.Integer">
+        SELECT total_point
+        FROM students
+        WHERE student_id = #{studentId}
+        LIMIT 1
+    </select>
+
+    <update id="setStudentPointDown">
+        UPDATE students
+        SET total_point = total_point - #{amount}
+        WHERE student_id = #{studentId}
+    </update>
+
+    <update id="setStudentPointUp">
+        UPDATE students
+        SET total_point = total_point + #{amount}
+        WHERE student_id = #{studentId}
+    </update>
+
+</mapper>

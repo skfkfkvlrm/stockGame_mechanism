@@ -74,4 +74,31 @@ public class AdminServiceImpl implements AdminService {
     public void deleteStock(int stockId) {
         stockListRepository.deleteStock(stockId);
     }
+
+    @Override
+    public void createCoupon(CouponRequest request) {
+        if (request.getName() == null || request.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("쿠폰 상품명을 입력해 주세요.");
+        }
+        if (request.getPrice() <= 0) {
+            throw new IllegalArgumentException("쿠폰 판매 가격은 1P 이상이어야 합니다.");
+        }
+        couponRepository.insertCoupon(request);
+    }
+
+    @Override
+    public void updateCoupon(int couponId, CouponRequest request) {
+        if (request.getName() == null || request.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("쿠폰 상품명을 입력해 주세요.");
+        }
+        if (request.getPrice() <= 0) {
+            throw new IllegalArgumentException("쿠폰 판매 가격은 1P 이상이어야 합니다.");
+        }
+        couponRepository.updateCoupon(couponId, request);
+    }
+
+    @Override
+    public void deleteCoupon(int couponId) {
+        couponRepository.deleteCoupon(couponId);
+    }
 }

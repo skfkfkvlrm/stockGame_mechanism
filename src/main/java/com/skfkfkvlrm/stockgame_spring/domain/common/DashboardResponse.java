@@ -15,4 +15,11 @@ public class DashboardResponse {
     private int totalProfit;
     private int totalCoupon;
     private List<StockInfoResponse> myStocks;
+
+    public String getStudentName() { return studentName; }
+    public int getTotalAsset() { return totalAsset; }
+    public int getTotalPoint() { return totalPoint; }
+    public int getTotalProfit() { return totalProfit; }
+    public int getTotalCoupon() { return totalCoupon; }
+    public List<StockInfoResponse> getMyStocks() { return myStocks; }
 }

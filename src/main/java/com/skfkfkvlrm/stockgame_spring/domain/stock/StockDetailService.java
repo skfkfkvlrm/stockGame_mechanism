@@ -14,4 +14,6 @@ public interface StockDetailService {
     List<Order> getwaitingOrderList(int stockId, String studentId);
     // 전체 주식 목록 상세 조회
     List<StockDetailResponse> getAllStocks();
+    // KOSPI / KOSDAQ 시장 지수 산출 조회
+    List<MarketIndexResponse> getMarketIndices();
 }

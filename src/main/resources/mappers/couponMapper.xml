@@ -4,7 +4,7 @@
 
 	<!-- 만들어져있는 쿠폰 모두 조회 -->
 	<select id="getCouponList" resultType="com.skfkfkvlrm.stockgame_spring.domain.coupon.Coupon">
-		SELECT coupon_id, name, price FROM coupons
+		SELECT coupon_id, name, price, COALESCE(status, 'ON_SALE') AS status FROM coupons
 	</select>
 	
 	<!-- 나의 가용포인트 조회 -->
@@ -26,14 +26,40 @@
 	
 	<!-- 나의 보유 쿠폰 조회 -->
 	<select id="getMyCouponList" parameterType="String" resultType="com.skfkfkvlrm.stockgame_spring.domain.coupon.CouponPurchase">
-		SELECT cp.name, cp.price, cp.state, cp.created_date as createdDate
+		SELECT cp.coupon_purchase_id AS couponPurchaseId, cp.name, cp.price, cp.state, cp.created_date as createdDate
 		FROM coupon_purchase cp 
 		INNER JOIN coupons c ON cp.coupon_id = c.coupon_id
 		WHERE cp.student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
+		ORDER BY cp.created_date DESC
 	</select>
+
+	<!-- 쿠폰 사용 처리: 본인 소유 확인 + 사용전 상태 확인 후 상태 변경 -->
+	<update id="useCoupon">
+		UPDATE coupon_purchase
+		SET state = '사용'
+		WHERE coupon_purchase_id = #{couponPurchaseId}
+		  AND student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
+		  AND state = '사용전'
+	</update>
 	
 	<!-- 내가 구매한 쿠폰 수량 -->
 	<select id="getMyCouponCount" parameterType="String" resultType="int">
 		SELECT COUNT(coupon_id) FROM coupon_purchase WHERE student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
 	</select>
+
+	<!-- 관리자 전용 쿠폰 CRUD -->
+	<insert id="insertCoupon" parameterType="com.skfkfkvlrm.stockgame_spring.domain.admin.CouponRequest">
+		INSERT INTO coupons (name, price, status, created_date)
+		VALUES (#{name}, #{price}, COALESCE(#{status}, 'ON_SALE'), NOW())
+	</insert>
+
+	<update id="updateCoupon">
+		UPDATE coupons
+		SET name = #{request.name}, price = #{request.price}, status = COALESCE(#{request.status}, 'ON_SALE')
+		WHERE coupon_id = #{couponId}
+	</update>
+
+	<delete id="deleteCoupon" parameterType="int">
+		DELETE FROM coupons WHERE coupon_id = #{couponId}
+	</delete>
 </mapper>

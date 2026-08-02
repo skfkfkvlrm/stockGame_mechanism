@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.skfkfkvlrm.stockservice.domain.stock.StockDetailRepository">
+
+    <select id="getStockInfo" resultType="Map">
+        SELECT stock_id, name, category, publication_price, publication_amount, publication_balance, description, status
+        FROM stocks
+        WHERE stock_id = #{stockId}
+        LIMIT 1
+    </select>
+
+    <select id="getStockPubInfo" resultType="Map">
+        SELECT publication_price, publication_amount, publication_balance
+        FROM stocks
+        WHERE stock_id = #{stockId}
+        LIMIT 1
+    </select>
+
+    <select id="getStudentStockAmount" resultType="int">
+        SELECT COALESCE(SUM(CASE WHEN content = '매수' THEN amount ELSE -amount END), 0)
+        FROM orders
+        WHERE (student_id = #{studentId} OR student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1))
+          AND stock_id = #{stockId}
+          AND state = '체결'
+    </select>
+
+    <select id="getMatchOrderList" resultType="com.skfkfkvlrm.stockservice.domain.stock.Order">
+        SELECT order_id AS orderId, content, state, price, amount, student_id AS studentId, stock_id AS stockId, created_date AS createdDate
+        FROM orders
+        WHERE stock_id = #{stockId}
+          AND content = #{content}
+          AND state = '대기'
+          AND student_id != #{studentId}
+          <if test="content == '매도'">
+              AND price &lt;= #{price}
+              ORDER BY price ASC, created_date ASC
+          </if>
+          <if test="content == '매수'">
+              AND price &gt;= #{price}
+              ORDER BY price DESC, created_date ASC
+          </if>
+    </select>
+
+    <insert id="insertOrder" parameterType="com.skfkfkvlrm.stockservice.domain.stock.Order" useGeneratedKeys="true" keyProperty="orderId">
+        INSERT INTO orders (content, state, price, amount, student_id, stock_id, created_date)
+        VALUES (#{content}, #{state}, #{price}, #{amount}, #{studentId}, #{stockId}, NOW())
+    </insert>
+
+    <insert id="setMatchedOrder">
+        INSERT INTO order_matches (buy_order_id, sell_order_id, amount, price, created_date)
+        VALUES (#{buyOrderId}, #{sellOrderId}, #{amount}, #{price}, NOW())
+    </insert>
+
+    <update id="setStockPubBalance">
+        UPDATE stocks
+        SET publication_balance = publication_balance - #{amount}
+        WHERE stock_id = #{stockId}
+    </update>
+
+    <update id="setOrderStateMatched">
+        UPDATE orders
+        SET state = '체결'
+        WHERE order_id = #{orderId}
+    </update>
+
+    <update id="updateOrderAmount">
+        UPDATE orders
+        SET amount = #{amount}
+        WHERE order_id = #{orderId}
+    </update>
+
+    <update id="setOrderStateCancel">
+        UPDATE orders
+        SET state = '취소'
+        WHERE order_id = #{orderId}
+    </update>
+
+    <select id="getOrderById" resultType="com.skfkfkvlrm.stockservice.domain.stock.StockOrderResponse">
+        SELECT order_id AS orderId, content, state, price, amount, student_id AS studentId, stock_id AS stockId, created_date AS createdDate
+        FROM orders
+        WHERE order_id = #{orderId}
+        LIMIT 1
+    </select>
+
+</mapper>

@@ -12,10 +12,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AiAdvisorService {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AiAdvisorService.class);
 
     private final AiOllamaService aiOllamaService;
     private final StockDetailService stockDetailService;

@@ -54,18 +54,18 @@ public class SecurityConfig {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
-    // ── Chain 1: /admin/** 전용 FilterChain ────────────────────────────────────
+    // ── Chain 1: /admin/** 백엔드 세션/뷰 전용 FilterChain ────────────────────
     @Bean
     @Order(1)
     public SecurityFilterChain adminFilterChain(HttpSecurity http) throws Exception {
         http
-            .securityMatcher("/admin/**")       // 이 Chain은 /admin/** 경로에만 적용
+            .securityMatcher("/admin/**")       // /admin/** 세션 뷰 경로에 적용
             .cors(org.springframework.security.config.Customizer.withDefaults())
             .authenticationProvider(authenticationProvider())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/admin/login").permitAll()                     // 로그인 페이지는 공개
-                .requestMatchers("/admin/stocks/**").hasRole("ADMIN")            // 종목 관리: ADMIN 전용
-                .requestMatchers("/admin/**").hasAnyRole("MANAGER", "ADMIN")     // 나머지 관리 경로: MANAGER+ADMIN
+                .requestMatchers("/admin/login").permitAll()                     // 로그인 API 공개
+                .requestMatchers("/admin/stocks/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")        // 종목 관리: ADMIN 전용
+                .requestMatchers("/admin/**").hasAnyAuthority("ROLE_MANAGER", "ROLE_ADMIN", "MANAGER", "ADMIN")         // 관리 경로: MANAGER+ADMIN
             )
             .formLogin(form -> form
                 .loginPage("/admin/login")
@@ -94,14 +94,12 @@ public class SecurityConfig {
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID")
             )
-            .csrf(csrf -> csrf
-                .csrfTokenRepository(org.springframework.security.web.csrf.CookieCsrfTokenRepository.withHttpOnlyFalse())
-            );
+            .csrf(csrf -> csrf.disable());
 
         return http.build();
     }
 
-    // ── Chain 2: 나머지 경로 (학생 JWT 방식) ─────────────────────────────
+    // ── Chain 2: REST API 경로 (/api/** 전용, 학생 및 관리자 JWT 방식) ─────────────────────────────
     @Bean
     @Order(2)
     public SecurityFilterChain studentFilterChain(HttpSecurity http, com.skfkfkvlrm.stockgame_spring.auth.JwtFilter jwtFilter) throws Exception {
@@ -109,7 +107,9 @@ public class SecurityConfig {
             .cors(org.springframework.security.config.Customizer.withDefaults()) // 전역 CORS 설정 적용
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/members/login", "/api/members/join", "/api/members/id-check", "/members/login", "/members/join", "/members/id-check").permitAll() // 로그인, 회원가입 등 공개
-                .requestMatchers("/api/asset/**", "/api/stock/**", "/orders/**", "/coupons/**", "/history").authenticated() // API 보호
+                .requestMatchers("/api/admin/stocks/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN") // REST 관리자 종목 관리
+                .requestMatchers("/api/admin/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_MANAGER", "ADMIN", "MANAGER") // REST 관리자 전체 경로
+                .requestMatchers("/api/asset/**", "/api/stock/**", "/api/orders/**", "/orders/**", "/api/coupons/**", "/coupons/**", "/api/history/**", "/history/**", "/api/news/**", "/api/ai/**").authenticated() // 학생 API 보호
                 .anyRequest().permitAll()
             )
             .csrf(csrf -> csrf.disable())
@@ -123,4 +123,6 @@ public class SecurityConfig {
 
         return http.build();
     }
+
 }
+

@@ -25,10 +25,11 @@ public class MemberController {
     @PostMapping("/login")
     public ApiResponse<StudentResponse> login(@RequestBody StudentLoginRequest request) {
         StudentResponse response = memberService.login(request);
-        String token = jwtUtil.createToken(response.getStudentId());
+        String token = jwtUtil.createToken(response.getStudentId(), response.getRole());
         response.setToken(token);
         return ApiResponse.success(token, response);
     }
+
 
     @PostMapping("/logout")
     public ApiResponse<Boolean> logout() {

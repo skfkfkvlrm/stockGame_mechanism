@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.skfkfkvlrm.pointservice.domain.point.MyPointHistoryRepository">
+
+    <select id="getMyPointHistoryList" resultType="com.skfkfkvlrm.pointservice.domain.point.PointHistoryResponse">
+        SELECT 
+            id AS historyId,
+            student_id AS studentId,
+            point AS amount,
+            'TRADE' AS type,
+            content AS description,
+            created_date AS createdAt
+        FROM get_points
+        WHERE student_id = #{studentId} OR student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
+        ORDER BY id DESC
+    </select>
+
+</mapper>

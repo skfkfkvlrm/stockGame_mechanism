@@ -108,4 +108,24 @@ public class AdminController {
         adminService.deleteStock(stockId);
         return ApiResponse.success("주식 종목이 성공적으로 상장폐지(삭제)되었습니다.", true);
     }
+
+    @PostMapping("/coupons")
+    public ApiResponse<Boolean> createCoupon(@org.springframework.web.bind.annotation.RequestBody CouponRequest request) {
+        adminService.createCoupon(request);
+        return ApiResponse.success("신규 쿠폰 상품이 성공적으로 등록되었습니다.", true);
+    }
+
+    @PutMapping("/coupons/{couponId}")
+    public ApiResponse<Boolean> updateCoupon(
+            @org.springframework.web.bind.annotation.PathVariable("couponId") int couponId,
+            @org.springframework.web.bind.annotation.RequestBody CouponRequest request) {
+        adminService.updateCoupon(couponId, request);
+        return ApiResponse.success("쿠폰 상품 정보가 성공적으로 수정되었습니다.", true);
+    }
+
+    @DeleteMapping("/coupons/{couponId}")
+    public ApiResponse<Boolean> deleteCoupon(@org.springframework.web.bind.annotation.PathVariable("couponId") int couponId) {
+        adminService.deleteCoupon(couponId);
+        return ApiResponse.success("쿠폰 상품이 성공적으로 삭제되었습니다.", true);
+    }
 }

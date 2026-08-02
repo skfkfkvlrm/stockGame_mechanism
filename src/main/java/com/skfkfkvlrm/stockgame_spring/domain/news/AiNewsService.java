@@ -10,10 +10,11 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AiNewsService {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AiNewsService.class);
 
     private final AiOllamaService aiOllamaService;
     private final StockDetailService stockDetailService;

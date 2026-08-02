@@ -22,7 +22,14 @@ public class JwtUtil {
     }
 
     public String createToken(String studentId) {
+        return createToken(studentId, "ROLE_STUDENT");
+    }
+
+    public String createToken(String studentId, String role) {
         Claims claims = Jwts.claims().setSubject(studentId);
+        if (role != null) {
+            claims.put("role", role);
+        }
         Date now = new Date();
         Date validity = new Date(now.getTime() + accessTokenValidity);
 
@@ -51,4 +58,14 @@ public class JwtUtil {
                 .getBody()
                 .getSubject();
     }
+
+    public String getRole(String token) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        return claims.get("role", String.class);
+    }
 }
+

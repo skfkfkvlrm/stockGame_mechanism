@@ -3,7 +3,7 @@
 <mapper namespace="com.skfkfkvlrm.stockgame_spring.domain.news.NewsRepository">
 
 <select id="getNewsList" resultType="string">
-	SELECT content FROM news ORDER BY created_date DESC
+	SELECT content FROM news ORDER BY news_id DESC, created_date DESC
 </select>
 
 <insert id="insertNews" parameterType="string">

@@ -14,4 +14,9 @@ import lombok.Setter;
 public class PointAdjustmentRequest {
     private int amount;
     private String reason;
+
+    public int getAmount() { return amount; }
+    public void setAmount(int amount) { this.amount = amount; }
+    public String getReason() { return reason; }
+    public void setReason(String reason) { this.reason = reason; }
 }

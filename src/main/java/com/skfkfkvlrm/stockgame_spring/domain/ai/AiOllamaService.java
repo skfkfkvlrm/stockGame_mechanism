@@ -11,9 +11,10 @@ import org.springframework.web.client.RestTemplate;
 import java.util.HashMap;
 import java.util.Map;
 
-@Slf4j
 @Service
 public class AiOllamaService {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AiOllamaService.class);
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final String OLLAMA_URL = "http://localhost:11434/api/generate";

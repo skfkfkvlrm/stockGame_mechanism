@@ -14,4 +14,7 @@ public interface AdminService {
     void createStock(StockRequest request);
     void updateStock(int stockId, StockRequest request);
     void deleteStock(int stockId);
+    void createCoupon(CouponRequest request);
+    void updateCoupon(int couponId, CouponRequest request);
+    void deleteCoupon(int couponId);
 }

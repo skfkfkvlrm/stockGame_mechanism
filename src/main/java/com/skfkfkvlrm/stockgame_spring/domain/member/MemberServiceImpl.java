@@ -40,15 +40,10 @@ public class MemberServiceImpl implements MemberService {
             String savedPassword = (String) savedData.get("password");
             boolean isMatched = false;
 
-            if (savedPassword != null && savedPassword.startsWith("$2a$")) {
-                // BCrypt 해시인 경우
+            if (savedPassword != null) {
                 isMatched = passwordEncoder.matches(request.getPassword(), savedPassword);
-            } else if (savedPassword != null && savedPassword.equals(request.getPassword())) {
-                // 평문 비밀번호인 경우 (마이그레이션)
-                isMatched = true;
-                // 평문 비밀번호를 BCrypt로 인코딩하여 DB 업데이트
-                memberRepository.updatePassword(request.getStudentId(), passwordEncoder.encode(request.getPassword()));
             }
+
 
             if (isMatched) {
                 String role = "admin".equals(request.getStudentId()) ? "ROLE_ADMIN" : "ROLE_STUDENT";

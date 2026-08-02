@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -13,6 +14,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -26,7 +29,16 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (StringUtils.hasText(token) && jwtUtil.validateToken(token)) {
             String studentId = jwtUtil.getStudentId(token);
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(studentId, null, new ArrayList<>());
+            String role = jwtUtil.getRole(token);
+            
+            List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+            if (StringUtils.hasText(role)) {
+                authorities.add(new SimpleGrantedAuthority(role));
+            } else {
+                authorities.add(new SimpleGrantedAuthority("ROLE_STUDENT"));
+            }
+
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(studentId, null, authorities);
             SecurityContextHolder.getContext().setAuthentication(authentication);
             
             // Set for @RequestAttribute in controllers to seamlessly migrate from @SessionAttribute
@@ -44,3 +56,4 @@ public class JwtFilter extends OncePerRequestFilter {
         return null;
     }
 }
+

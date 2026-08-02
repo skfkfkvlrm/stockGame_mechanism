@@ -10,11 +10,12 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Random;
 
-@Slf4j
 @Component
 @EnableScheduling
 @RequiredArgsConstructor
 public class NewsCrawlerScheduler {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(NewsCrawlerScheduler.class);
 
     private final NewsRepository newsRepository;
     private final Random random = new Random();

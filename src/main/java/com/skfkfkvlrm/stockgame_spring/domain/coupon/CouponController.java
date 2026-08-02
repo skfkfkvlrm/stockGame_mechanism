@@ -57,11 +57,38 @@ public class CouponController {
             return ApiResponse.error("존재하지 않는 쿠폰입니다.");
         }
 
+        if (targetCoupon.getStatus() != null && !"ON_SALE".equalsIgnoreCase(targetCoupon.getStatus())) {
+            if ("PAUSED".equalsIgnoreCase(targetCoupon.getStatus())) {
+                return ApiResponse.error("해당 쿠폰은 현재 판매가 일시중지되었습니다.");
+            } else if ("SOLD_OUT".equalsIgnoreCase(targetCoupon.getStatus())) {
+                return ApiResponse.error("해당 쿠폰은 품절/마감되었습니다.");
+            } else {
+                return ApiResponse.error("현재 구매할 수 없는 쿠폰 상태입니다.");
+            }
+        }
+
         try {
             couponService.buyCoupon(studentId, targetCoupon.getPrice(), targetCoupon.getName(), couponId);
             return ApiResponse.success("Coupon bought", "쿠폰 구매에 성공했습니다.");
         } catch (Exception e) {
             return ApiResponse.error("포인트가 부족하거나 쿠폰 구매 중 오류가 발생했습니다.");
+        }
+    }
+
+    @org.springframework.web.bind.annotation.PatchMapping("/{purchaseId}/use")
+    public ApiResponse<String> useCoupon(
+            @org.springframework.web.bind.annotation.RequestAttribute(name = "studentId", required = false) String studentId,
+            @org.springframework.web.bind.annotation.PathVariable("purchaseId") int couponPurchaseId) {
+        if (studentId == null) {
+            return ApiResponse.error("로그인이 필요합니다.");
+        }
+        try {
+            couponService.useCoupon(couponPurchaseId, studentId);
+            return ApiResponse.success("Coupon used", "쿠폰 사용이 완료되었습니다.");
+        } catch (com.skfkfkvlrm.stockgame_spring.exception.StockGameException e) {
+            return ApiResponse.error(e.getErrorCode().getMessage());
+        } catch (Exception e) {
+            return ApiResponse.error("쿠폰 사용 처리 중 오류가 발생했습니다.");
         }
     }
 }

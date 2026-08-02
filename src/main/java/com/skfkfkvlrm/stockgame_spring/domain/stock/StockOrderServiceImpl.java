@@ -63,6 +63,18 @@ public class StockOrderServiceImpl implements StockOrderService {
         validateMarketOpen();
         validateTickSize(request.getPrice());
 
+        Map<String, Object> stockInfo = stockDetailRepository.getStockInfo(request.getStockId());
+        if (stockInfo != null) {
+            String status = (String) stockInfo.get("status");
+            if (status != null && !"LISTED".equalsIgnoreCase(status)) {
+                if ("SUSPENDED".equalsIgnoreCase(status)) {
+                    throw new IllegalArgumentException("해당 종목은 현재 거래가 정지되었습니다.");
+                } else if ("DELISTED".equalsIgnoreCase(status)) {
+                    throw new IllegalArgumentException("해당 종목은 상장 폐지되어 거래할 수 없습니다.");
+                }
+            }
+        }
+
         int totalOrderPrice = request.getPrice() * request.getAmount();
         // 1. 보유 포인트 확인
         int currentPoints = stockDetailRepository.getStudentPoint(request.getStudentId());
@@ -168,6 +180,18 @@ public class StockOrderServiceImpl implements StockOrderService {
     public String sellStock(StockOrderRequest request) {
         validateMarketOpen();
         validateTickSize(request.getPrice());
+
+        Map<String, Object> stockInfo = stockDetailRepository.getStockInfo(request.getStockId());
+        if (stockInfo != null) {
+            String status = (String) stockInfo.get("status");
+            if (status != null && !"LISTED".equalsIgnoreCase(status)) {
+                if ("SUSPENDED".equalsIgnoreCase(status)) {
+                    throw new IllegalArgumentException("해당 종목은 현재 거래가 정지되었습니다.");
+                } else if ("DELISTED".equalsIgnoreCase(status)) {
+                    throw new IllegalArgumentException("해당 종목은 상장 폐지되어 거래할 수 없습니다.");
+                }
+            }
+        }
 
         Map<String, Object> pubInfo = stockDetailRepository.getStockPubInfo(request.getStockId());
         // 발행 잔량(pubAmount)이 남아 있어도 매도(예약)는 가능하도록 방어 로직 제거

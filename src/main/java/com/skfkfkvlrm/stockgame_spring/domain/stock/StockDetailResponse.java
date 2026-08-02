@@ -5,10 +5,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Getter
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
 public class StockDetailResponse {
     private int stockId;
     private String stockName;
@@ -17,4 +13,27 @@ public class StockDetailResponse {
     private int prevPrice;
     private int pubPrice;
     private int pubAmount;
+    private String status; // 'LISTED' | 'SUSPENDED' | 'DELISTED'
+
+    public StockDetailResponse() {}
+
+    public StockDetailResponse(int stockId, String stockName, String content, int nowPrice, int prevPrice, int pubPrice, int pubAmount, String status) {
+        this.stockId = stockId;
+        this.stockName = stockName;
+        this.content = content;
+        this.nowPrice = nowPrice;
+        this.prevPrice = prevPrice;
+        this.pubPrice = pubPrice;
+        this.pubAmount = pubAmount;
+        this.status = status;
+    }
+
+    public int getStockId() { return stockId; }
+    public String getStockName() { return stockName; }
+    public String getContent() { return content; }
+    public int getNowPrice() { return nowPrice; }
+    public int getPrevPrice() { return prevPrice; }
+    public int getPubPrice() { return pubPrice; }
+    public int getPubAmount() { return pubAmount; }
+    public String getStatus() { return status; }
 }

@@ -2,7 +2,7 @@
 <!DOCTYPE mapper  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.skfkfkvlrm.stockgame_spring.domain.stock.StockDetailRepository">
 	<select id="getStockInfo" parameterType="int" resultType="map">
-		SELECT name, content FROM stocks WHERE stock_id = #{stockId}
+		SELECT name, content, COALESCE(status, 'LISTED') AS status FROM stocks WHERE stock_id = #{stockId}
 	</select>
 	<select id="getStockPrice" parameterType="int" resultType="int">
 		SELECT COALESCE(

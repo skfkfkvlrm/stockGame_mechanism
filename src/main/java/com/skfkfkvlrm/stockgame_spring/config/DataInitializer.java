@@ -20,10 +20,11 @@ import org.springframework.stereotype.Component;
  * 운영 환경에서는 초기 비밀번호를 application.yaml 환경변수로 분리해야 합니다.
  * 예: ${ADMIN_PASSWORD:admin1234}
  */
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class DataInitializer implements ApplicationRunner {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(DataInitializer.class);
 
     private final AppUserRepository appUserRepository;
     private final MarketSettingsRepository marketSettingsRepository;
@@ -86,6 +87,18 @@ public class DataInitializer implements ApplicationRunner {
                 jdbcTemplate.execute("ALTER TABLE coupons DROP COLUMN student_id");
             } catch (Exception e) {
                 // Ignore if column does not exist
+            }
+
+            try {
+                jdbcTemplate.execute("ALTER TABLE coupons ADD COLUMN status VARCHAR(20) DEFAULT 'ON_SALE'");
+            } catch (Exception e) {
+                // Ignore if column already exists
+            }
+
+            try {
+                jdbcTemplate.execute("ALTER TABLE stocks ADD COLUMN status VARCHAR(20) DEFAULT 'LISTED'");
+            } catch (Exception e) {
+                // Ignore if column already exists
             }
 
             // Clean up duplicates if any (keep latest record)

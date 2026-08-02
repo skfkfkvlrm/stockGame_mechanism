@@ -7,10 +7,11 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StockSchedulerService {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(StockSchedulerService.class);
 
     private final StockPriceHistoryRepository stockPriceHistoryRepository;
 

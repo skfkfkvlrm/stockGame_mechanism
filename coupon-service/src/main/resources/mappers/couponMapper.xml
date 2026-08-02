@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.skfkfkvlrm.couponservice.domain.coupon.CouponRepository">
+
+    <select id="getCouponList" resultType="com.skfkfkvlrm.couponservice.domain.coupon.Coupon">
+        SELECT coupon_id AS couponId, name, price, description, status
+        FROM coupons
+        WHERE status = 'AVAILABLE' OR status = 'ACTIVE'
+    </select>
+
+    <select id="getMyCouponList" resultType="com.skfkfkvlrm.couponservice.domain.coupon.CouponPurchase">
+        SELECT 
+            id AS couponPurchaseId,
+            student_id AS studentId,
+            coupon_id AS couponId,
+            status,
+            created_date AS purchasedAt
+        FROM coupon_purchases
+        WHERE student_id = #{studentId}
+    </select>
+
+    <insert id="insertCouponPurchase">
+        INSERT INTO coupon_purchases (student_id, coupon_id, status, created_date)
+        VALUES (#{studentId}, #{couponId}, #{status}, NOW())
+    </insert>
+
+    <update id="updateCouponPurchaseStatus">
+        UPDATE coupon_purchases
+        SET status = #{status}
+        WHERE id = #{couponPurchaseId}
+    </update>
+
+</mapper>

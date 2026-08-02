@@ -14,4 +14,7 @@ public interface CouponService {
 
     //쿠폰 구매
     void buyCoupon(String studentId, int couponPrice, String couponName, int couponId);
+
+    //쿠폰 사용 (사용전 → 사용 상태 전환, 본인 소유 및 상태 검증 포함)
+    void useCoupon(int couponPurchaseId, String studentId);
 }

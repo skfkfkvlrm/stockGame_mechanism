@@ -1,5 +1,6 @@
 package com.skfkfkvlrm.stockgame_spring.domain.coupon;
 
+import com.skfkfkvlrm.stockgame_spring.domain.admin.CouponRequest;
 import com.skfkfkvlrm.stockgame_spring.domain.coupon.Coupon;
 import com.skfkfkvlrm.stockgame_spring.domain.coupon.CouponPurchase;
 import com.skfkfkvlrm.stockgame_spring.domain.coupon.CouponPurchaseStatus;
@@ -30,4 +31,12 @@ public interface CouponRepository {
 
     // 내가 보유한 쿠폰 조회
     List<CouponPurchase> getMyCouponList(String studentId);
+
+    // 쿠폰 사용 처리 (사용전 → 사용, 본인 소유 검증 포함) — 영향 행 반환
+    int useCoupon(int couponPurchaseId, String studentId);
+
+    // 관리자 전용 쿠폰 CRUD
+    void insertCoupon(CouponRequest request);
+    void updateCoupon(int couponId, CouponRequest request);
+    void deleteCoupon(int couponId);
 }
