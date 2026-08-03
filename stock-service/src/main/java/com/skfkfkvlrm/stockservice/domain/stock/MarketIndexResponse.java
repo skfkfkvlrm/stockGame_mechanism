@@ -4,14 +4,16 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class MarketIndexResponse {
-    private double kospiIndex;
-    private double kospiChangeRate;
-    private double kosdaqIndex;
-    private double kosdaqChangeRate;
+    private String name;
+    private double value;
+    private double change;
+    private double changeRate;
 }

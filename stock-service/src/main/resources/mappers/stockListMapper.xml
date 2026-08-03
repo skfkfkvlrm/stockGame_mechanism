@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.skfkfkvlrm.stockservice.domain.stock.StockListRepository">
+	<select id="getStockNameList" resultType="com.skfkfkvlrm.stockservice.domain.stock.Stock">
+		SELECT stock_id AS stockId, name FROM stocks ORDER BY stock_id
+	</select>
+
+	<select id="getAllStocks" resultType="com.skfkfkvlrm.stockservice.domain.stock.Stock">
+		SELECT stock_id AS stockId, name, content, publication_balance AS publicationBalance, publication_price AS publicationPrice, prev_price AS prevPrice, COALESCE(status, 'LISTED') AS status
+		FROM stocks
+		ORDER BY stock_id ASC
+	</select>
+
+	<insert id="insertStock">
+		INSERT INTO stocks (name, content, publication_price, publication_balance, prev_price, status)
+		VALUES (#{name}, #{content}, #{publicationPrice}, #{publicationBalance}, #{publicationPrice}, COALESCE(#{status}, 'LISTED'))
+	</insert>
+
+	<update id="updateStock">
+		UPDATE stocks
+		SET name = #{request.name},
+		    content = #{request.content},
+		    publication_price = #{request.publicationPrice},
+		    publication_balance = #{request.publicationBalance},
+		    status = COALESCE(#{request.status}, 'LISTED')
+		WHERE stock_id = #{stockId}
+	</update>
+
+	<delete id="deleteStock">
+		DELETE FROM stocks WHERE stock_id = #{stockId}
+	</delete>
+</mapper>

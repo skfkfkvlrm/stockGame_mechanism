@@ -1,22 +1,29 @@
 package com.skfkfkvlrm.stockservice.domain.stock;
 
+import com.skfkfkvlrm.stockservice.domain.stock.OrderStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import java.time.LocalDateTime;
 
 @Getter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class StockOrderResponse {
+    private String studentId;
     private int orderId;
-    private OrderStatus content;
-    private OrderStatus state;
+    private int stockId;
+    private String content;
     private int price;
     private int amount;
-    private String studentId;
-    private int stockId;
-    private LocalDateTime createdDate;
+    private OrderStatus state;
+
+    public String getStudentId() { return studentId; }
+    public int getOrderId() { return orderId; }
+    public int getStockId() { return stockId; }
+    public String getContent() { return content; }
+    public int getPrice() { return price; }
+    public int getAmount() { return amount; }
+    public OrderStatus getState() { return state; }
 }

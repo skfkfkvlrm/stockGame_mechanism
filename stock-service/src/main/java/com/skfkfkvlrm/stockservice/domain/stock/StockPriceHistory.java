@@ -1,35 +1,54 @@
 package com.skfkfkvlrm.stockservice.domain.stock;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "stock_price_history")
+@Setter
 @Getter
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
+@Entity
+@Table(
+    name = "stock_price_history",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"stockId", "baseDate"})
+    }
+)
 public class StockPriceHistory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long historyId;
 
-    @Column(name = "stock_id")
+    @Column(nullable = false)
     private int stockId;
 
-    @Column(name = "trade_date")
-    private LocalDate tradeDate;
+    @Column(nullable = false)
+    private LocalDate baseDate;
 
-    @Column(name = "close_price")
+    @Column(nullable = false)
+    private int openPrice;
+
+    @Column(nullable = false)
+    private int highPrice;
+
+    @Column(nullable = false)
+    private int lowPrice;
+
+    @Column(nullable = false)
     private int closePrice;
 
+    @Column(nullable = false)
     private int volume;
 
-    @Column(name = "created_date")
+    @CreationTimestamp
     private LocalDateTime createdDate;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedDate;
 }

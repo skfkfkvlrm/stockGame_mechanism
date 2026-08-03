@@ -1,7 +1,14 @@
 package com.skfkfkvlrm.stockservice.domain.stock;
 
-import com.skfkfkvlrm.stockservice.client.PointClient;
-import com.skfkfkvlrm.stockservice.domain.common.ApiResponse;
+import com.skfkfkvlrm.stockservice.domain.stock.StockOrderRequest;
+import com.skfkfkvlrm.stockservice.domain.stock.StockOrderResponse;
+import com.skfkfkvlrm.stockservice.domain.admin.MarketSettings;
+import com.skfkfkvlrm.stockservice.domain.stock.Order;
+import com.skfkfkvlrm.stockservice.domain.stock.OrderStatus;
+import com.skfkfkvlrm.stockservice.domain.admin.MarketSettingsRepository;
+import com.skfkfkvlrm.stockservice.domain.stock.StockDetailRepository;
+import com.skfkfkvlrm.stockservice.domain.stock.StockPriceHistoryRepository;
+import com.skfkfkvlrm.stockservice.domain.stock.StockOrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -12,28 +19,25 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class StockOrderServiceImpl implements StockOrderService {
     private final StockDetailRepository stockDetailRepository;
     private final StockPriceHistoryRepository stockPriceHistoryRepository;
+    private final MarketSettingsRepository marketSettingsRepository;
     private final SimpMessagingTemplate messagingTemplate;
-    private final PointClient pointClient;
     private final OrderMatcher orderMatcher = new OrderMatcher();
 
-    public StockOrderServiceImpl(StockDetailRepository stockDetailRepository,
-                                 StockPriceHistoryRepository stockPriceHistoryRepository,
-                                 @org.springframework.lang.Nullable SimpMessagingTemplate messagingTemplate,
-                                 PointClient pointClient) {
-        this.stockDetailRepository = stockDetailRepository;
-        this.stockPriceHistoryRepository = stockPriceHistoryRepository;
-        this.messagingTemplate = messagingTemplate;
-        this.pointClient = pointClient;
+    private void validateMarketOpen() {
+        MarketSettings settings = marketSettingsRepository.findById(1).orElse(null);
+        if (settings != null && !settings.isMarketOpen()) {
+            throw new RuntimeException("Business Error");
+        }
     }
-
 
     private void validateTickSize(int price) {
         int tickSize = getTickSize(price);
         if (price % tickSize != 0) {
-            throw new IllegalArgumentException("올바르지 않은 호가 단위입니다.");
+            throw new RuntimeException("Business Error");
         }
     }
 
@@ -46,14 +50,17 @@ public class StockOrderServiceImpl implements StockOrderService {
     }
 
     private void broadcastOrderUpdate(int stockId) {
-        if (messagingTemplate != null) {
-            messagingTemplate.convertAndSend("/topic/orders/" + stockId, "ORDER_UPDATED");
-        }
+        messagingTemplate.convertAndSend("/topic/orders/" + stockId, "ORDER_UPDATED");
+    }
+
+    private void notifyStudent(String studentId, String message) {
+        messagingTemplate.convertAndSendToUser(studentId, "/queue/notifications", message);
     }
 
     @Override
     @Transactional
     public String buyStock(StockOrderRequest request) {
+        validateMarketOpen();
         validateTickSize(request.getPrice());
 
         Map<String, Object> stockInfo = stockDetailRepository.getStockInfo(request.getStockId());
@@ -69,44 +76,42 @@ public class StockOrderServiceImpl implements StockOrderService {
         }
 
         int totalOrderPrice = request.getPrice() * request.getAmount();
-
-        // OpenFeign을 통해 point-service에서 보유 포인트 조회
-        ApiResponse<Integer> pointRes = pointClient.getStudentPoint(request.getStudentId());
-        int currentPoints = (pointRes != null && pointRes.getData() != null) ? pointRes.getData() : 0;
+        // 1. 보유 포인트 확인
+        Integer pointsObj = stockDetailRepository.getStudentPoint(request.getStudentId());
+        int currentPoints = pointsObj != null ? pointsObj : 0;
         if (currentPoints < totalOrderPrice) {
-            throw new IllegalArgumentException("보유 포인트가 부족합니다.");
+            throw new IllegalArgumentException("보유 포인트가 부족합니다. (필요: " + totalOrderPrice + "P, 보유: " + currentPoints + "P)");
         }
-
-        // 발행 정보 확인 및 처리
+        // 2. 발행 정보 확인
         Map<String, Object> pubInfo = stockDetailRepository.getStockPubInfo(request.getStockId());
         int pubAmount = getIntOrDefault(pubInfo, "publication_balance");
         int pubPrice = getIntOrDefault(pubInfo, "publication_price");
-
+        // a. 발행 주식 거래 (매수 가격이 발행가와 같을 때만)
         if (pubAmount > 0 && request.getPrice() >= pubPrice) {
             if (request.getPrice() > pubPrice) {
-                throw new IllegalArgumentException("발행가보다 비싸게 매수할 수 없습니다.");
+                throw new IllegalArgumentException("발행 주식 매수는 발행 가격(" + pubPrice + "P) 이하로만 가능합니다.");
             }
             if (request.getAmount() > pubAmount) {
-                throw new IllegalArgumentException("발행 잔량을 초과했습니다.");
+                throw new IllegalArgumentException("발행 잔여 수량(" + pubAmount + "주)을 초과하여 주문할 수 없습니다.");
             }
 
-            Order order = createOrder(request, OrderStatus.매수, OrderStatus.체결);
+            Order order = createOrder(request, OrderStatus.BUY, OrderStatus.MATCHED);
             stockDetailRepository.insertOrder(order);
             stockDetailRepository.setMatchedOrder(order.getOrderId(), null, request.getAmount(), request.getPrice());
             stockDetailRepository.setStockPubBalance(request.getAmount(), request.getStockId());
-            
-            // OpenFeign point-service 포인트 차감
-            pointClient.decreasePoint(request.getStudentId(), totalOrderPrice);
+            stockDetailRepository.setStudentPointDown(totalOrderPrice, request.getStudentId());
 
             stockPriceHistoryRepository.upsertDailyPrice(request.getStockId(), LocalDate.now(), request.getPrice(), request.getAmount());
 
             broadcastOrderUpdate(request.getStockId());
+            notifyStudent(request.getStudentId(), request.getStockId() + " 종목 매수가 체결되었습니다.");
+
             return "매수 주문이 체결되었습니다.";
         }
-
-        // 학생 간 거래 매칭
+        // b. 학생 간 거래 (부분 체결 로직)
+        // 매수 시 "SELL" 대기열을 조회
         List<Order> sellOrders = stockDetailRepository.getMatchOrderList(
-                request.getStockId(), OrderStatus.매도.name(), request.getPrice(), request.getStudentId());
+                request.getStockId(), OrderStatus.SELL.name(), request.getPrice(), request.getStudentId());
 
         MatchResult matchResult = orderMatcher.match(request.getAmount(), sellOrders);
 
@@ -116,6 +121,7 @@ public class StockOrderServiceImpl implements StockOrderService {
             int matchPrice = match.getMatchPrice();
             int matchTotalPrice = match.getMatchTotalPrice();
 
+            // 매도 주문 처리
             int sellOrderId;
             if (match.isFullyMatched()) {
                 stockDetailRepository.setOrderStateMatched(sellOrder.getOrderId());
@@ -123,38 +129,39 @@ public class StockOrderServiceImpl implements StockOrderService {
             } else {
                 stockDetailRepository.updateOrderAmount(sellOrder.getAmount() - matchAmount, sellOrder.getOrderId());
                 Order sellFilled = Order.builder()
-                        .content(OrderStatus.매도).state(OrderStatus.체결)
+                        .content(OrderStatus.SELL).state(OrderStatus.MATCHED)
                         .price(matchPrice).amount(matchAmount)
                         .studentId(sellOrder.getStudentId()).stockId(request.getStockId()).build();
                 stockDetailRepository.insertOrder(sellFilled);
                 sellOrderId = sellFilled.getOrderId();
             }
 
+            // 매수 주문 처리 (체결용)
             Order buyFilled = Order.builder()
-                    .content(OrderStatus.매수).state(OrderStatus.체결)
+                    .content(OrderStatus.BUY).state(OrderStatus.MATCHED)
                     .price(matchPrice).amount(matchAmount)
                     .studentId(request.getStudentId()).stockId(request.getStockId()).build();
             stockDetailRepository.insertOrder(buyFilled);
             int buyOrderId = buyFilled.getOrderId();
 
+            // 거래내역 및 포인트 정산
             stockDetailRepository.setMatchedOrder(buyOrderId, sellOrderId, matchAmount, matchPrice);
-            
-            // OpenFeign 포인트 차감 및 매도자 포인트 추가
-            pointClient.decreasePoint(request.getStudentId(), matchTotalPrice);
-            pointClient.increasePoint(sellOrder.getStudentId(), matchTotalPrice);
+            stockDetailRepository.setStudentPointDown(matchTotalPrice, request.getStudentId());
+            stockDetailRepository.setStudentPointUp(matchTotalPrice, sellOrder.getStudentId());
 
             stockPriceHistoryRepository.upsertDailyPrice(request.getStockId(), LocalDate.now(), matchPrice, matchAmount);
         }
 
         int remainingAmount = matchResult.getRemainingAmount();
 
+        // c. 남은 수량이 있으면 대기 등록
         if (remainingAmount > 0) {
             Order order = Order.builder()
-                    .content(OrderStatus.매수).state(OrderStatus.대기)
+                    .content(OrderStatus.BUY).state(OrderStatus.WAITING)
                     .price(request.getPrice()).amount(remainingAmount)
                     .studentId(request.getStudentId()).stockId(request.getStockId()).build();
             stockDetailRepository.insertOrder(order);
-            pointClient.decreasePoint(request.getStudentId(), request.getPrice() * remainingAmount);
+            stockDetailRepository.setStudentPointDown(request.getPrice() * remainingAmount, request.getStudentId());
             
             broadcastOrderUpdate(request.getStockId());
             if (remainingAmount < request.getAmount()) {
@@ -165,12 +172,14 @@ public class StockOrderServiceImpl implements StockOrderService {
         }
         
         broadcastOrderUpdate(request.getStockId());
+        notifyStudent(request.getStudentId(), request.getStockId() + " 종목 매수가 전량 체결되었습니다.");
         return "매수 주문이 전량 체결되었습니다.";
     }
 
     @Override
     @Transactional
     public String sellStock(StockOrderRequest request) {
+        validateMarketOpen();
         validateTickSize(request.getPrice());
 
         Map<String, Object> stockInfo = stockDetailRepository.getStockInfo(request.getStockId());
@@ -185,13 +194,19 @@ public class StockOrderServiceImpl implements StockOrderService {
             }
         }
 
+        Map<String, Object> pubInfo = stockDetailRepository.getStockPubInfo(request.getStockId());
+        // 발행 잔량(pubAmount)이 남아 있어도 매도(예약)는 가능하도록 방어 로직 제거
+        
+        // 1. 보유 주식 수량 검증
         int stockAmount = stockDetailRepository.getStudentStockAmount(request.getStockId(), request.getStudentId());
         if (request.getAmount() > stockAmount) {
-            throw new IllegalArgumentException("보유 주식이 부족합니다.");
+            throw new RuntimeException("Business Error");
         }
-
+        int totalOrderPrice = request.getPrice() * request.getAmount();
+        // 2. 학생 간 거래 (부분 체결 로직)
+        // 매도 시 "BUY" 대기열을 조회
         List<Order> buyOrders = stockDetailRepository.getMatchOrderList(
-                request.getStockId(), OrderStatus.매수.name(), request.getPrice(), request.getStudentId());
+                request.getStockId(), OrderStatus.BUY.name(), request.getPrice(), request.getStudentId());
 
         MatchResult matchResult = orderMatcher.match(request.getAmount(), buyOrders);
 
@@ -201,6 +216,7 @@ public class StockOrderServiceImpl implements StockOrderService {
             int matchPrice = match.getMatchPrice();
             int matchTotalPrice = match.getMatchTotalPrice();
 
+            // 매수 주문 처리
             int buyOrderId;
             if (match.isFullyMatched()) {
                 stockDetailRepository.setOrderStateMatched(buyOrder.getOrderId());
@@ -208,33 +224,34 @@ public class StockOrderServiceImpl implements StockOrderService {
             } else {
                 stockDetailRepository.updateOrderAmount(buyOrder.getAmount() - matchAmount, buyOrder.getOrderId());
                 Order buyFilled = Order.builder()
-                        .content(OrderStatus.매수).state(OrderStatus.체결)
+                        .content(OrderStatus.BUY).state(OrderStatus.MATCHED)
                         .price(matchPrice).amount(matchAmount)
                         .studentId(buyOrder.getStudentId()).stockId(request.getStockId()).build();
                 stockDetailRepository.insertOrder(buyFilled);
                 buyOrderId = buyFilled.getOrderId();
             }
 
+            // 매도 주문 처리 (체결용)
             Order sellFilled = Order.builder()
-                    .content(OrderStatus.매도).state(OrderStatus.체결)
+                    .content(OrderStatus.SELL).state(OrderStatus.MATCHED)
                     .price(matchPrice).amount(matchAmount)
                     .studentId(request.getStudentId()).stockId(request.getStockId()).build();
             stockDetailRepository.insertOrder(sellFilled);
             int sellOrderId = sellFilled.getOrderId();
 
+            // 거래내역 및 포인트 정산
             stockDetailRepository.setMatchedOrder(buyOrderId, sellOrderId, matchAmount, matchPrice);
-            
-            // OpenFeign 매도 대금 포인트 추가
-            pointClient.increasePoint(request.getStudentId(), matchTotalPrice);
+            stockDetailRepository.setStudentPointUp(matchTotalPrice, request.getStudentId());
 
             stockPriceHistoryRepository.upsertDailyPrice(request.getStockId(), LocalDate.now(), matchPrice, matchAmount);
         }
 
         int remainingAmount = matchResult.getRemainingAmount();
 
+        // 3. 남은 수량이 있으면 대기 등록
         if (remainingAmount > 0) {
             Order order = Order.builder()
-                    .content(OrderStatus.매도).state(OrderStatus.대기)
+                    .content(OrderStatus.SELL).state(OrderStatus.WAITING)
                     .price(request.getPrice()).amount(remainingAmount)
                     .studentId(request.getStudentId()).stockId(request.getStockId()).build();
             stockDetailRepository.insertOrder(order);
@@ -248,13 +265,14 @@ public class StockOrderServiceImpl implements StockOrderService {
         }
 
         broadcastOrderUpdate(request.getStockId());
+        notifyStudent(request.getStudentId(), request.getStockId() + " 종목 매도가 전량 체결되었습니다.");
         return "매도 주문이 전량 체결되었습니다.";
     }
 
     private Order createOrder(StockOrderRequest request, OrderStatus content, OrderStatus state) {
         return Order.builder()
                 .content(content)
-                .state(state.equals(OrderStatus.체결) ? OrderStatus.체결 : OrderStatus.대기)
+                .state(state.equals(OrderStatus.MATCHED) ? OrderStatus.MATCHED : OrderStatus.WAITING)
                 .price(request.getPrice())
                 .amount(request.getAmount())
                 .studentId(request.getStudentId())
@@ -272,26 +290,32 @@ public class StockOrderServiceImpl implements StockOrderService {
     @Override
     @Transactional
     public int cancelOrder(int orderId, String studentId) {
+        // 1. 취소할 주문 정보 상세 조회
         StockOrderResponse order = stockDetailRepository.getOrderById(orderId);
         if (order == null){
-            throw new IllegalArgumentException("주문을 찾을 수 없습니다.");
+            throw new RuntimeException("Business Error");
         }
+        // 2. 본인 주문이 맞는지 검증
         if (!order.getStudentId().equals(studentId)) {
-            throw new IllegalArgumentException("본인 주문만 취소할 수 있습니다.");
+            throw new RuntimeException("Business Error");
         }
-        if (order.getState() == OrderStatus.체결 || order.getState() == OrderStatus.취소) {
-            throw new IllegalArgumentException("이미 처리된 주문입니다.");
+        // 3. 주문 상태가 취소 가능한 상태('대기')인지 검증
+        if (order.getState() == OrderStatus.MATCHED) {
+            throw new RuntimeException("Business Error");
         }
-
+        if (order.getState() == OrderStatus.CANCELLED) {
+            throw new RuntimeException("Business Error");
+        }
+        // 4. 매수 취소 시 포인트 환불
         String contentStr = order.getContent() != null ? order.getContent().toString() : "";
-        if ("매수".equals(contentStr) || OrderStatus.매수.name().equals(contentStr)) {
+        if ("BUY".equals(contentStr) || OrderStatus.BUY.name().equals(contentStr)) {
             int refundAmount = order.getPrice() * order.getAmount();
-            // OpenFeign 포인트 환불
-            pointClient.increasePoint(studentId, refundAmount);
+            stockDetailRepository.setStudentPointUp(refundAmount, studentId);
         }
-        
+        // 5. 주문 상태를 '취소'로 업데이트
         stockDetailRepository.setOrderStateCancel(orderId);
         broadcastOrderUpdate(order.getStockId());
+        // 6. 주식 번호 리턴
         return order.getOrderId();
     }
 }

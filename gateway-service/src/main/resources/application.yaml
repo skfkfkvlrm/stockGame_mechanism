@@ -24,23 +24,23 @@ spring:
             allowCredentials: true
       routes:
         - id: member-service
-          uri: lb://member-service
+          uri: lb://MEMBER-SERVICE
           predicates:
             - Path=/api/members/**, /admin/**, /api/admin/**
         - id: stock-service
-          uri: lb://stock-service
+          uri: lb://STOCK-SERVICE
           predicates:
             - Path=/api/stock/**, /api/orders/**, /orders/**
         - id: point-service
-          uri: lb://point-service
+          uri: lb://POINT-SERVICE
           predicates:
             - Path=/api/asset/**, /api/history/**, /history/**
         - id: coupon-service
-          uri: lb://coupon-service
+          uri: lb://COUPON-SERVICE
           predicates:
             - Path=/api/coupons/**, /coupons/**
         - id: ai-news-service
-          uri: lb://ai-news-service
+          uri: lb://AI-NEWS-SERVICE
           predicates:
             - Path=/api/ai/**, /api/news/**
 

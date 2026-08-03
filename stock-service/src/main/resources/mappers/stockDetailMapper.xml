@@ -1,85 +1,133 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.skfkfkvlrm.stockservice.domain.stock.StockDetailRepository">
-
-    <select id="getStockInfo" resultType="Map">
-        SELECT stock_id, name, category, publication_price, publication_amount, publication_balance, description, status
-        FROM stocks
-        WHERE stock_id = #{stockId}
-        LIMIT 1
-    </select>
-
-    <select id="getStockPubInfo" resultType="Map">
-        SELECT publication_price, publication_amount, publication_balance
-        FROM stocks
-        WHERE stock_id = #{stockId}
-        LIMIT 1
-    </select>
-
-    <select id="getStudentStockAmount" resultType="int">
-        SELECT COALESCE(SUM(CASE WHEN content = '매수' THEN amount ELSE -amount END), 0)
-        FROM orders
-        WHERE (student_id = #{studentId} OR student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1))
-          AND stock_id = #{stockId}
-          AND state = '체결'
-    </select>
-
-    <select id="getMatchOrderList" resultType="com.skfkfkvlrm.stockservice.domain.stock.Order">
-        SELECT order_id AS orderId, content, state, price, amount, student_id AS studentId, stock_id AS stockId, created_date AS createdDate
-        FROM orders
-        WHERE stock_id = #{stockId}
-          AND content = #{content}
-          AND state = '대기'
-          AND student_id != #{studentId}
-          <if test="content == '매도'">
-              AND price &lt;= #{price}
-              ORDER BY price ASC, created_date ASC
-          </if>
-          <if test="content == '매수'">
-              AND price &gt;= #{price}
-              ORDER BY price DESC, created_date ASC
-          </if>
-    </select>
-
-    <insert id="insertOrder" parameterType="com.skfkfkvlrm.stockservice.domain.stock.Order" useGeneratedKeys="true" keyProperty="orderId">
-        INSERT INTO orders (content, state, price, amount, student_id, stock_id, created_date)
-        VALUES (#{content}, #{state}, #{price}, #{amount}, #{studentId}, #{stockId}, NOW())
-    </insert>
-
-    <insert id="setMatchedOrder">
-        INSERT INTO order_matches (buy_order_id, sell_order_id, amount, price, created_date)
-        VALUES (#{buyOrderId}, #{sellOrderId}, #{amount}, #{price}, NOW())
-    </insert>
-
-    <update id="setStockPubBalance">
-        UPDATE stocks
-        SET publication_balance = publication_balance - #{amount}
-        WHERE stock_id = #{stockId}
-    </update>
-
-    <update id="setOrderStateMatched">
-        UPDATE orders
-        SET state = '체결'
-        WHERE order_id = #{orderId}
-    </update>
-
-    <update id="updateOrderAmount">
-        UPDATE orders
-        SET amount = #{amount}
-        WHERE order_id = #{orderId}
-    </update>
-
-    <update id="setOrderStateCancel">
-        UPDATE orders
-        SET state = '취소'
-        WHERE order_id = #{orderId}
-    </update>
-
-    <select id="getOrderById" resultType="com.skfkfkvlrm.stockservice.domain.stock.StockOrderResponse">
-        SELECT order_id AS orderId, content, state, price, amount, student_id AS studentId, stock_id AS stockId, created_date AS createdDate
-        FROM orders
-        WHERE order_id = #{orderId}
-        LIMIT 1
-    </select>
-
+	<select id="getStockInfo" parameterType="int" resultType="map">
+		SELECT name, content, COALESCE(status, 'LISTED') AS status FROM stocks WHERE stock_id = #{stockId}
+	</select>
+	<select id="getStockPrice" parameterType="int" resultType="int">
+		SELECT COALESCE(
+					   (SELECT o.price FROM stock_transactions t
+												JOIN orders o ON t.buy_order_id = o.order_id WHERE o.stock_id = #{stockId}
+				        ORDER BY t.created_date DESC LIMIT 1),
+				       (SELECT publication_price FROM stocks WHERE stock_id = #{stockId})
+		       )
+	</select>
+	<select id="getStockPriceChange" parameterType="int" resultType="int">
+		SELECT COALESCE((SELECT o.price FROM stock_transactions t JOIN orders o ON t.buy_order_id = o.order_id WHERE o.stock_id = #{stockId} ORDER BY t.created_date DESC LIMIT 1), s.publication_price) - s.prev_price
+		FROM stocks s WHERE s.stock_id = #{stockId}
+	</select>
+	<select id="getChangeRate" parameterType="int" resultType="double">
+		SELECT COALESCE(
+					   ROUND(
+							   (COALESCE(
+										(SELECT o.price
+										 FROM stock_transactions t
+										     JOIN orders o ON t.buy_order_id = o.order_id
+										 WHERE o.stock_id = #{stockId}
+										 ORDER BY t.created_date DESC LIMIT 1),
+										s.publication_price) - s.prev_price) / NULLIF(s.prev_price, 0) * 100), 0) as ChangeRate
+		FROM stocks s
+		WHERE s.stock_id = #{stockId}
+	</select>
+	<select id="getPervPrice" parameterType="int" resultType="int">
+		SELECT prev_price FROM stocks WHERE stock_id = #{stockId}
+	</select>
+	<select id="getStudentStockAmount" resultType="int">
+		SELECT COALESCE(SUM(CASE WHEN content='매수' THEN amount ELSE -amount END), 0) AS amount
+		FROM orders WHERE student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1) AND stock_id = #{stockId} AND state='체결'
+	</select>
+	<select id="getStudentPoint" parameterType="String" resultType="java.lang.Integer">
+		SELECT COALESCE(total_point, 0) FROM students WHERE student_id = #{studentId} LIMIT 1
+	</select>
+	<insert id="setOrderRequest">
+		INSERT INTO orders (content, price, amount, state, created_date, student_id, stock_id)
+		VALUES (#{content}, #{price}, #{amount}, #{state}, NOW(), (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1), #{stockId})
+	</insert>
+	<select id="getTotalOrder" parameterType="int" resultType="com.skfkfkvlrm.stockservice.domain.stock.Order">
+		SELECT price, amount, content FROM orders 
+		WHERE stock_id = #{stockId} AND state = '대기' ORDER BY created_date ASC
+	</select>
+	<select id="getTotalSellOrder" parameterType="int" resultType="com.skfkfkvlrm.stockservice.domain.stock.Order">
+		SELECT price, amount, content FROM orders 
+		WHERE stock_id = #{stockId} AND state = '대기' AND content = '매도' ORDER BY created_date ASC
+	</select>
+	<select id="getTotalBuyOrder" parameterType="int" resultType="com.skfkfkvlrm.stockservice.domain.stock.Order">
+		SELECT price, amount, content FROM orders 
+		WHERE stock_id = #{stockId} AND state = '대기' AND content = '매수' ORDER BY created_date ASC
+	</select>
+	<select id="getTotalMyOrder" resultType="com.skfkfkvlrm.stockservice.domain.stock.Order">
+		SELECT order_id, content, price, amount, created_date, state FROM orders
+		WHERE student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1) AND stock_id = #{stockId} AND state ='대기' ORDER BY created_date ASC
+	</select>
+	<update id="setStudentPointUp">
+		UPDATE students SET total_point = total_point + #{totalPrice} WHERE student_id = #{studentId}
+	</update>
+	<update id="setStudentPointDown">
+		UPDATE students SET total_point = total_point - #{totalPrice} WHERE student_id = #{studentId}
+	</update>
+	<insert id="setMatchedOrder">
+		INSERT INTO stock_transactions (created_date, buy_order_id, sell_order_id, amount, price)
+		VALUES (NOW(), #{buyOrderId}, #{sellOrderId}, #{amount}, #{price})
+	</insert>
+	<update id="setOrderStatePending" parameterType="int">
+		UPDATE orders SET state = '대기' WHERE order_id = #{orderId}
+	</update>
+	<update id="setOrderStateMatched" parameterType="int">
+		UPDATE orders SET state = '체결' WHERE order_id = #{orderId}
+	</update>
+	<update id="setOrderStateCancel" parameterType="int">
+		UPDATE orders SET state = '취소' WHERE order_id = #{orderId}
+	</update>
+	<select id="getStockPubInfo" parameterType="int" resultType="map">
+		SELECT publication_balance, publication_price FROM stocks WHERE stock_id = #{stockId} FOR UPDATE
+	</select>
+	<update id="setStockPubBalance">
+		UPDATE stocks SET publication_balance = publication_balance - #{buyAmount} WHERE stock_id = #{stockId}
+	</update>
+	<select id="getMatchOrder" resultType="map">
+		SELECT order_id, content, price, amount, state, created_date, student_id, stock_id
+		FROM orders
+		WHERE stock_id = #{stockId} AND state = '대기' AND content = #{content} AND price = #{orderPrice}
+		AND amount = #{orderAmount} AND student_id != (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
+		ORDER BY created_date ASC LIMIT 1 FOR UPDATE
+	</select>
+	<select id="getMyOrderNo" resultType="int">
+		SELECT order_id FROM orders
+		WHERE content = #{content} AND student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1) AND stock_id = #{stockId}
+		AND state = #{state} AND amount = #{amount} AND price = #{price} ORDER BY created_date DESC LIMIT 1
+	</select>
+	<insert id="insertOrder" parameterType="com.skfkfkvlrm.stockservice.domain.stock.Order"
+	        useGeneratedKeys="true" keyProperty="orderId" keyColumn="order_id">
+		INSERT INTO orders (content, price, amount, state, created_date, student_id, stock_id)
+		VALUES (#{content}, #{price}, #{amount}, #{state}, NOW(), (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1), #{stockId})
+	</insert>
+	<select id="getMatchOrderList" resultType="com.skfkfkvlrm.stockservice.domain.stock.Order">
+		SELECT o.order_id, o.content, o.price, o.amount, o.state, o.created_date, s.student_id, o.stock_id
+		FROM orders o
+		JOIN students s ON o.student_id = s.id
+		WHERE o.stock_id = #{stockId}
+		  AND o.state = '대기'
+		  AND o.content = #{content}
+		  AND o.price = #{orderPrice}
+		  AND s.student_id != (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
+		ORDER BY created_date ASC
+			FOR UPDATE
+	</select>
+	<update id="updateOrder">
+		UPDATE orders
+		SET amount = #{amount},
+		    state = #{state}
+		WHERE order_id = #{orderId}
+	</update>
+	<update id="updateOrderAmount">
+		UPDATE orders
+		SET amount = amount - #{amount}
+		WHERE order_id = #{orderId}
+	</update>
+	<select id="getOrderById" resultType="com.skfkfkvlrm.stockservice.domain.stock.StockOrderResponse">
+		SELECT o.order_id, o.content, o.price, o.amount, o.state, s.student_id, o.stock_id
+		FROM orders o
+		JOIN students s ON o.student_id = s.id
+		WHERE o.order_id = #{orderId}
+	</select>
 </mapper>
