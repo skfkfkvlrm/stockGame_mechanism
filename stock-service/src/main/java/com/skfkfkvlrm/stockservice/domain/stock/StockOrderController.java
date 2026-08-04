@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/orders")
+@RequestMapping(value = "/api/orders", produces = "application/json;charset=UTF-8")
 @RequiredArgsConstructor
 public class StockOrderController {
     private final StockOrderService stockOrderService;

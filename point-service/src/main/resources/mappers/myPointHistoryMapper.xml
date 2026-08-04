@@ -2,17 +2,87 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.skfkfkvlrm.pointservice.domain.point.MyPointHistoryRepository">
 
-    <select id="getMyPointHistoryList" resultType="com.skfkfkvlrm.pointservice.domain.point.PointHistoryResponse">
-        SELECT 
-            id AS historyId,
-            student_id AS studentId,
-            point AS amount,
-            'TRADE' AS type,
-            content AS description,
-            created_date AS createdAt
-        FROM get_points
-        WHERE student_id = #{studentId} OR student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
-        ORDER BY id DESC
+    <select id="getMyPointHistoryList" parameterType="String" resultType="com.skfkfkvlrm.pointservice.domain.point.PointHistoryResponse">
+        SELECT history_date AS historyDate, history_type AS historyType, history_content AS historyContent, point_change AS pointChange 
+        FROM ( 
+            (SELECT 
+                created_date AS history_date,
+                '지급' AS history_type, 
+                '기초 회원가입 지원 포인트' AS history_content, 
+                30000 AS point_change 
+            FROM students 
+            WHERE student_id = #{studentId} OR id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
+            LIMIT 1)
+
+            UNION ALL 
+
+            SELECT 
+                cp.created_date AS history_date,
+                '쿠폰' AS history_type, 
+                cp.name AS history_content, 
+                -cp.price AS point_change 
+            FROM coupon_purchase cp
+            WHERE cp.student_id = #{studentId} OR cp.student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
+
+            UNION ALL 
+
+            SELECT 
+                gp.created_date AS history_date,
+                '지급' AS history_type, 
+                gp.content AS history_content, 
+                gp.point AS point_change 
+            FROM get_points gp
+            WHERE gp.student_id = #{studentId} OR gp.student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
+
+            UNION ALL 
+
+            SELECT 
+                t.created_date AS history_date,
+                '매수' AS history_type, 
+                s.name AS history_content, 
+                -(o.price * o.amount) AS point_change 
+            FROM stock_transactions t
+            JOIN orders o ON t.buy_order_id = o.order_id
+            JOIN stocks s ON o.stock_id = s.stock_id
+            WHERE o.student_id = #{studentId} OR o.student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
+
+            UNION ALL 
+
+            SELECT 
+                t.created_date AS history_date,
+                '매도' AS history_type, 
+                s.name AS history_content, 
+                (o.price * o.amount) AS point_change 
+            FROM stock_transactions t
+            JOIN orders o ON t.sell_order_id = o.order_id
+            JOIN stocks s ON o.stock_id = s.stock_id
+            WHERE o.student_id = #{studentId} OR o.student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
+
+            UNION ALL 
+
+            SELECT 
+                o.created_date AS history_date,
+                '매수예약' AS history_type, 
+                CONCAT(s.name, ' 매수 예약') AS history_content, 
+                -(o.price * o.amount) AS point_change 
+            FROM orders o
+            JOIN stocks s ON o.stock_id = s.stock_id
+            WHERE (o.student_id = #{studentId} OR o.student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1))
+              AND o.content IN ('매수', 'BUY') AND o.state IN ('대기', 'WAITING')
+
+            UNION ALL 
+
+            SELECT 
+                o.created_date AS history_date,
+                '주문취소' AS history_type, 
+                CONCAT(s.name, ' 매수 취소 (환불)') AS history_content, 
+                (o.price * o.amount) AS point_change 
+            FROM orders o
+            JOIN stocks s ON o.stock_id = s.stock_id
+            WHERE (o.student_id = #{studentId} OR o.student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1))
+              AND o.content IN ('매수', 'BUY') AND o.state IN ('취소', 'CANCELLED')
+        ) history
+        ORDER BY history_date DESC
     </select>
 
 </mapper>

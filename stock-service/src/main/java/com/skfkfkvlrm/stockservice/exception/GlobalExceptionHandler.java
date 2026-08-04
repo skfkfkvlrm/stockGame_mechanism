@@ -41,6 +41,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     protected ResponseEntity<ApiResponse<Void>> handleException(Exception e) {
+        org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class).error("Unhandled Exception: ", e);
         return ResponseEntity
                 .status(ErrorCode.INTERNAL_SERVER_ERROR.getStatus())
                 .body(ApiResponse.error(ErrorCode.INTERNAL_SERVER_ERROR.getMessage()));

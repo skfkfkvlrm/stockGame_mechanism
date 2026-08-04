@@ -27,7 +27,7 @@ public class StockDetailServiceImpl implements StockDetailService {
     public StockDetailResponse getStockDetailInfo(int stockId) {
         Map<String, Object> stockInfo = stockDetailRepository.getStockInfo(stockId);
         if (stockInfo == null) {
-            throw new RuntimeException("Business Error");
+            throw new com.skfkfkvlrm.stockservice.exception.StockGameException(com.skfkfkvlrm.stockservice.exception.ErrorCode.STOCK_NOT_FOUND);
         }
 
         // 2. 二쇱 諛? ?蹂?議고

@@ -30,7 +30,7 @@ spring:
         - id: stock-service
           uri: lb://STOCK-SERVICE
           predicates:
-            - Path=/api/stock/**, /api/orders/**, /orders/**
+            - Path=/api/stock/**, /api/orders/**, /orders/**, /api/news/**
         - id: point-service
           uri: lb://POINT-SERVICE
           predicates:

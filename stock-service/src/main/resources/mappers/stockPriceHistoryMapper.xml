@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.skfkfkvlrm.stockservice.domain.stock.StockPriceHistoryRepository">
+
+    <insert id="upsertDailyPrice">
+        INSERT INTO stock_price_history
+            (stock_id, base_date, open_price, high_price, low_price, close_price, volume, created_date)
+        VALUES
+            (#{stockId}, #{baseDate}, #{price}, #{price}, #{price}, #{price}, #{amount}, NOW())
+        ON DUPLICATE KEY UPDATE
+            high_price = GREATEST(high_price, VALUES(high_price)),
+            low_price = LEAST(low_price, VALUES(low_price)),
+            close_price = VALUES(close_price),
+            volume = volume + VALUES(volume),
+            updated_date = NOW()
+    </insert>
+
+    <select id="findHistoryByStockId" resultType="com.skfkfkvlrm.stockservice.domain.stock.StockPriceHistory">
+        SELECT 
+            history_id as historyId,
+            stock_id as stockId,
+            base_date as baseDate,
+            open_price as openPrice,
+            high_price as highPrice,
+            low_price as lowPrice,
+            close_price as closePrice,
+            volume,
+            created_date as createdDate,
+            updated_date as updatedDate
+        FROM stock_price_history
+        WHERE stock_id = #{stockId}
+        ORDER BY base_date ASC
+    </select>
+
+    <update id="updatePrevPricesToLatestClose">
+        UPDATE stocks s
+        JOIN (
+            SELECT stock_id, close_price
+            FROM stock_price_history h1
+            WHERE base_date = (
+                SELECT MAX(base_date) 
+                FROM stock_price_history h2 
+                WHERE h1.stock_id = h2.stock_id
+            )
+        ) latest ON s.stock_id = latest.stock_id
+        SET s.prev_price = latest.close_price
+    </update>
+
+</mapper>
