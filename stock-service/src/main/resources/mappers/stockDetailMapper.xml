@@ -40,7 +40,7 @@
 		  AND state IN ('체결', 'MATCHED')
 	</select>
 	<select id="getStudentPoint" parameterType="String" resultType="java.lang.Integer">
-		SELECT COALESCE(total_point, 0) FROM students WHERE (student_id = #{studentId} OR id = #{studentId}) LIMIT 1
+		SELECT COALESCE(total_point, 0) FROM students WHERE (student_id = #{studentId} OR id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)) LIMIT 1
 	</select>
 	<insert id="setOrderRequest">
 		INSERT INTO orders (content, price, amount, state, created_date, student_id, stock_id)
@@ -64,10 +64,10 @@
 		  AND stock_id = #{stockId} AND state IN ('대기', 'WAITING') ORDER BY created_date ASC
 	</select>
 	<update id="setStudentPointUp">
-		UPDATE students SET total_point = total_point + #{totalPrice} WHERE (student_id = #{studentId} OR id = #{studentId})
+		UPDATE students SET total_point = total_point + #{totalPrice} WHERE (student_id = #{studentId} OR id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1))
 	</update>
 	<update id="setStudentPointDown">
-		UPDATE students SET total_point = total_point - #{totalPrice} WHERE (student_id = #{studentId} OR id = #{studentId})
+		UPDATE students SET total_point = total_point - #{totalPrice} WHERE (student_id = #{studentId} OR id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1))
 	</update>
 	<insert id="setMatchedOrder">
 		INSERT INTO stock_transactions (created_date, buy_order_id, sell_order_id, amount, price)
@@ -135,3 +135,4 @@
 		WHERE o.order_id = #{orderId}
 	</select>
 </mapper>
+
