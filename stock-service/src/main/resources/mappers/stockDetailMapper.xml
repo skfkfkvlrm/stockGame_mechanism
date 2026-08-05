@@ -106,14 +106,14 @@
 		VALUES (#{content}, #{price}, #{amount}, #{state}, NOW(), COALESCE((SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1), #{studentId}), #{stockId})
 	</insert>
 	<select id="getMatchOrderList" resultType="com.skfkfkvlrm.stockservice.domain.stock.Order">
-		SELECT o.order_id, o.content, o.price, o.amount, o.state, o.created_date, s.student_id, o.stock_id
+		SELECT o.order_id, o.content, o.price, o.amount, o.state, o.created_date, COALESCE(s.student_id, o.student_id) AS student_id, o.stock_id
 		FROM orders o
 		LEFT JOIN students s ON (o.student_id = CAST(s.id AS CHAR) OR o.student_id = s.student_id)
 		WHERE o.stock_id = #{stockId}
 		  AND o.state IN ('대기', 'WAITING')
 		  AND o.content = #{content}
 		  AND o.price = #{orderPrice}
-		  AND s.student_id != #{studentId}
+		  AND COALESCE(s.student_id, o.student_id) != #{studentId}
 		ORDER BY created_date ASC
 			FOR UPDATE
 	</select>
@@ -135,4 +135,5 @@
 		WHERE o.order_id = #{orderId}
 	</select>
 </mapper>
+
 
