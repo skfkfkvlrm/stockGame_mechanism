@@ -46,4 +46,9 @@
         WHERE student_id = #{studentId}
     </update>
 
+    <!-- 학생 삭제 -->
+    <delete id="deleteStudent" parameterType="String">
+        DELETE FROM students WHERE student_id = #{studentId} OR id = CAST(#{studentId} AS UNSIGNED)
+    </delete>
+
 </mapper>

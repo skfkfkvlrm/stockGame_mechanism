@@ -71,4 +71,14 @@ public class MemberController {
         memberRepository.updateStudentPoint(amount, studentId);
         return ApiResponse.success("학생 포인트가 성공적으로 반영되었습니다.", true);
     }
+
+    @DeleteMapping("/admin/students/{studentId}")
+    public ApiResponse<Boolean> deleteStudent(@PathVariable("studentId") String studentId) {
+        int rows = memberRepository.deleteStudent(studentId);
+        if (rows > 0) {
+            return ApiResponse.success("학생 계정이 성공적으로 삭제되었습니다.", true);
+        } else {
+            return ApiResponse.error("삭제할 학생을 찾을 수 없습니다.");
+        }
+    }
 }
