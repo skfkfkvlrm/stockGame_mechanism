@@ -11,4 +11,5 @@ public interface MemberRepository {
     Map<String, Object> findByStudentId(@Param("studentId") String studentId);
     int getIdCheck(@Param("studentId") String studentId);
     List<StudentRankingResponse> getStudentRanking();
+    int updateStudentPoint(@Param("amount") int amount, @Param("studentId") String studentId);
 }

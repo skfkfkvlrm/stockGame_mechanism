@@ -1,4 +1,4 @@
-server:
+﻿server:
   port: 8081
 
 spring:
@@ -6,7 +6,7 @@ spring:
     name: member-service
   datasource:
     driver-class-name: org.mariadb.jdbc.Driver
-    url: ${DB_URL:jdbc:mariadb://127.0.0.1:3307/mydb?allowPublicKeyRetrieval=true&useSSL=false}
+    url: ${DB_URL:jdbc:mariadb://127.0.0.1:3307/mydb?useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&useSSL=false}
     username: ${DB_USERNAME:mydbid}
     password: ${DB_PASSWORD:mydbpw}
   jpa:
@@ -27,4 +27,5 @@ eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
+
 

@@ -13,6 +13,7 @@ import java.util.List;
 public class MemberController {
 
     private final MemberService memberService;
+    private final MemberRepository memberRepository;
     private final JwtUtil jwtUtil;
 
     @PostMapping("/join")
@@ -60,5 +61,14 @@ public class MemberController {
     public ApiResponse<List<StudentRankingResponse>> getStudentRanking() {
         List<StudentRankingResponse> rankingList = memberService.getStudentRanking();
         return ApiResponse.success("학생 랭킹 조회 성공", rankingList);
+    }
+
+    @PostMapping("/admin/students/{studentId}/point")
+    public ApiResponse<Boolean> adjustStudentPoint(
+            @PathVariable("studentId") String studentId,
+            @RequestBody java.util.Map<String, Object> body) {
+        int amount = body.get("amount") != null ? ((Number) body.get("amount")).intValue() : 0;
+        memberRepository.updateStudentPoint(amount, studentId);
+        return ApiResponse.success("학생 포인트가 성공적으로 반영되었습니다.", true);
     }
 }

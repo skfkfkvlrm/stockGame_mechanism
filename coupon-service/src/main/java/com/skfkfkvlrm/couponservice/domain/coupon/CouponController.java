@@ -15,13 +15,7 @@ public class CouponController {
     private final CouponService couponService;
 
     @GetMapping
-    public ApiResponse<List<Coupon>> getCoupons(@RequestAttribute(name = "studentId", required = false) String studentId) {
-        if (studentId == null && org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null) {
-            studentId = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
-        }
-        if (studentId == null || "anonymousUser".equals(studentId)) {
-            return ApiResponse.error("로그인이 필요합니다.");
-        }
+    public ApiResponse<List<Coupon>> getCoupons() {
         List<Coupon> coupons = couponRepository.getCouponList();
         return ApiResponse.success("Coupon data", coupons);
     }
@@ -72,7 +66,8 @@ public class CouponController {
             couponService.buyCoupon(studentId, targetCoupon.getPrice(), targetCoupon.getName(), couponId);
             return ApiResponse.success("Coupon bought", "쿠폰 구매에 성공했습니다.");
         } catch (Exception e) {
-            return ApiResponse.error("포인트가 부족하거나 쿠폰 구매 중 오류가 발생했습니다.");
+            e.printStackTrace();
+            return ApiResponse.error(e.getMessage() != null ? e.getMessage() : "포인트가 부족하거나 쿠폰 구매 중 오류가 발생했습니다.");
         }
     }
 
@@ -90,7 +85,32 @@ public class CouponController {
             couponService.useCoupon(couponPurchaseId, studentId);
             return ApiResponse.success("Coupon used", "쿠폰 사용이 완료되었습니다.");
         } catch (Exception e) {
-            return ApiResponse.error("쿠폰 사용 처리 중 오류가 발생했습니다.");
+            e.printStackTrace();
+            return ApiResponse.error(e.getMessage() != null ? e.getMessage() : "쿠폰 사용 처리 중 오류가 발생했습니다.");
         }
+    }
+
+    @PostMapping("/admin/coupons")
+    public ApiResponse<Boolean> createCouponAdmin(@RequestBody java.util.Map<String, Object> body) {
+        String name = (String) body.get("name");
+        int price = body.get("price") != null ? ((Number) body.get("price")).intValue() : 0;
+        String status = (String) body.getOrDefault("status", "ON_SALE");
+        couponRepository.insertCoupon(name, price, status);
+        return ApiResponse.success("신규 쿠폰 상품이 등록되었습니다.", true);
+    }
+
+    @PutMapping("/admin/coupons/{couponId}")
+    public ApiResponse<Boolean> updateCouponAdmin(@PathVariable("couponId") int couponId, @RequestBody java.util.Map<String, Object> body) {
+        String name = (String) body.get("name");
+        int price = body.get("price") != null ? ((Number) body.get("price")).intValue() : 0;
+        String status = (String) body.getOrDefault("status", "ON_SALE");
+        couponRepository.updateCoupon(couponId, name, price, status);
+        return ApiResponse.success("쿠폰 정보가 수정되었습니다.", true);
+    }
+
+    @DeleteMapping("/admin/coupons/{couponId}")
+    public ApiResponse<Boolean> deleteCouponAdmin(@PathVariable("couponId") int couponId) {
+        couponRepository.deleteCoupon(couponId);
+        return ApiResponse.success("쿠폰이 삭제되었습니다.", true);
     }
 }

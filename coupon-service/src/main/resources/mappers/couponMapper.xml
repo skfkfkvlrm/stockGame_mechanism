@@ -13,15 +13,22 @@
 	</select>
 
 	<!-- 쿠폰 구매 (쿠폰구매내역 추가) -->
-	<insert id="setPurchaseRecord">
+	<insert id="insertCouponPurchase">
 		INSERT INTO coupon_purchase (price, name, state, created_date, student_id, coupon_id)
-		VALUES(#{couponPrice}, #{couponName}, #{state}, NOW(), (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1), #{couponId})
+		VALUES(
+			(SELECT price FROM coupons WHERE coupon_id = #{couponId}),
+			(SELECT name FROM coupons WHERE coupon_id = #{couponId}),
+			'사용전',
+			NOW(),
+			(SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1),
+			#{couponId}
+		)
 	</insert>
 
-	<!-- 쿠폰 구매시 학생의 가용포인트 차감 및 보유쿠폰 개수 업데이트 -->
-	<update id="setStudentAssets">
-		UPDATE students SET total_point = total_point - #{couponPrice}, total_coupon = total_coupon + 1
-		WHERE student_id = #{studentId} AND total_point >= #{couponPrice}
+	<update id="updateCouponPurchaseStatus">
+		UPDATE coupon_purchase
+		SET state = CASE WHEN #{status} = 'USED' THEN '사용' ELSE #{status} END
+		WHERE coupon_purchase_id = #{couponPurchaseId}
 	</update>
 
 	<!-- 나의 보유 쿠폰 조회 -->
@@ -46,5 +53,23 @@
 	<select id="getMyCouponCount" parameterType="String" resultType="int">
 		SELECT COUNT(coupon_id) FROM coupon_purchase WHERE (student_id = #{studentId} OR student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1))
 	</select>
+
+	<!-- 관리자 쿠폰 CRUD -->
+	<insert id="insertCoupon">
+		INSERT INTO coupons (name, price, status)
+		VALUES (#{name}, #{price}, COALESCE(#{status}, 'ON_SALE'))
+	</insert>
+
+	<update id="updateCoupon">
+		UPDATE coupons
+		SET name = #{name},
+		    price = #{price},
+		    status = COALESCE(#{status}, 'ON_SALE')
+		WHERE coupon_id = #{couponId}
+	</update>
+
+	<delete id="deleteCoupon">
+		DELETE FROM coupons WHERE coupon_id = #{couponId}
+	</delete>
 
 </mapper>

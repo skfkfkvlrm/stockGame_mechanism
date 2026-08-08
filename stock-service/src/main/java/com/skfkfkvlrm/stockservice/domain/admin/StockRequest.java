@@ -12,4 +12,5 @@ public class StockRequest {
     private String content;
     private int publicationPrice;
     private int publicationBalance;
+    private String status;
 }
