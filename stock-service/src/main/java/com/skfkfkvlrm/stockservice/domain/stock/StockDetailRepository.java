@@ -19,6 +19,7 @@ public interface StockDetailRepository {
     int getStockPriceChange(int stockId);
     double getChangeRate(int stockId);
     int getPervPrice(int stockId);
+    int getTradeVolume(int stockId);
 
     Integer getStudentPoint(String studentId);
     int getStudentStockAmount(@Param("stockId") int stockId, @Param("studentId") String studentId);

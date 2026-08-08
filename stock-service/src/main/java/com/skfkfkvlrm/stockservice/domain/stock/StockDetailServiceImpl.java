@@ -35,16 +35,17 @@ public class StockDetailServiceImpl implements StockDetailService {
 
         int pubPrice = getIntOrDefault(stockPubInfo, "pubPrice");
         int pubAmount = getIntOrDefault(stockPubInfo, "pubAmount");
-        // 3. ??????媛寃?議고
+        // 3. ?„???œ??媛€寃?議고šŒ
         int nowPrice = stockDetailRepository.getStockPrice(stockId);
         nowPrice = nowPrice == 0 ? pubPrice : nowPrice;
-        // 4. ?댁 ??媛寃?議고
+        // 4. 이전 날 가격 및 유저 간 거래량(발행 잔량 제외) 조회
         int prevPrice = stockDetailRepository.getPervPrice(stockId);
+        int tradeVolume = stockDetailRepository.getTradeVolume(stockId);
 
         String status = (String) stockInfo.get("status");
         if (status == null) status = "LISTED";
 
-        // 5. response 鍮? ? 諛?
+        // 5. response 빌드 후 반환
         return new StockDetailResponse(
                 stockId,
                 (String) stockInfo.get("name"),
@@ -53,6 +54,7 @@ public class StockDetailServiceImpl implements StockDetailService {
                 prevPrice,
                 pubPrice,
                 pubAmount,
+                tradeVolume,
                 status
         );
     }
@@ -64,6 +66,7 @@ public class StockDetailServiceImpl implements StockDetailService {
         return stocks.stream().map(s -> {
             int nowPrice = stockDetailRepository.getStockPrice(s.getStockId());
             nowPrice = nowPrice == 0 ? s.getPublicationPrice() : nowPrice;
+            int tradeVol = stockDetailRepository.getTradeVolume(s.getStockId());
             return new StockDetailResponse(
                     s.getStockId(),
                     s.getName(),
@@ -72,6 +75,7 @@ public class StockDetailServiceImpl implements StockDetailService {
                     s.getPrevPrice(),
                     s.getPublicationPrice(),
                     s.getPublicationBalance(),
+                    tradeVol,
                     s.getStatus() != null ? s.getStatus() : "LISTED"
             );
         }).collect(Collectors.toList());

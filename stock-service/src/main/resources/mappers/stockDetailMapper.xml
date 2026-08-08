@@ -32,6 +32,12 @@
 	<select id="getPervPrice" parameterType="int" resultType="int">
 		SELECT prev_price FROM stocks WHERE stock_id = #{stockId}
 	</select>
+	<select id="getTradeVolume" parameterType="int" resultType="int">
+		SELECT COALESCE(SUM(t.amount), 0)
+		FROM stock_transactions t
+		JOIN orders o ON t.buy_order_id = o.order_id
+		WHERE o.stock_id = #{stockId}
+	</select>
 	<select id="getStudentStockAmount" resultType="int">
 		SELECT COALESCE(SUM(CASE WHEN content IN ('매수', 'BUY') THEN amount ELSE -amount END), 0) AS amount
 		FROM orders 
