@@ -25,4 +25,10 @@ public class MyAssetController {
         DashboardResponse dashboardData = myAssetService.getDashboard(studentId);
         return ApiResponse.success("자산 대시보드 조회 성공", dashboardData);
     }
+
+    @GetMapping("/admin/students/{targetStudentId}/detail")
+    public ApiResponse<DashboardResponse> getStudentDetailDashboard(@org.springframework.web.bind.annotation.PathVariable("targetStudentId") String targetStudentId) {
+        DashboardResponse dashboardData = myAssetService.getDashboard(targetStudentId);
+        return ApiResponse.success("학생 자산 대시보드 조회 성공", dashboardData);
+    }
 }
