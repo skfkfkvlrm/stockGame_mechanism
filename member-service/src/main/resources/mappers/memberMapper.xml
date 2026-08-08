@@ -7,7 +7,7 @@
     <!-- 회원가입 -->
     <insert id="setMember" parameterType="com.skfkfkvlrm.memberservice.domain.member.StudentJoinRequest">
         INSERT INTO students (student_id, password, name, grade, class_name, class_number, register_year, total_coupon, total_point, created_date)
-        VALUES (#{studentId}, #{password}, #{name}, #{grade}, #{className}, #{classNumber}, YEAR(NOW()), 0, 30000, NOW())
+        VALUES (#{studentId}, #{password}, #{name}, #{grade}, #{className}, #{classNumber}, YEAR(NOW()), 0, 100000, NOW())
     </insert>
 
     <!-- 아이디 단건 조회 -->
