@@ -129,7 +129,7 @@
 		WHERE order_id = #{orderId}
 	</update>
 	<select id="getOrderById" resultType="com.skfkfkvlrm.stockservice.domain.stock.StockOrderResponse">
-		SELECT o.order_id, o.content, o.price, o.amount, o.state, s.student_id, o.stock_id
+		SELECT o.order_id, o.content, o.price, o.amount, o.state, COALESCE(s.student_id, o.student_id) AS student_id, o.stock_id
 		FROM orders o
 		LEFT JOIN students s ON (o.student_id = CAST(s.id AS CHAR) OR o.student_id = s.student_id)
 		WHERE o.order_id = #{orderId}
