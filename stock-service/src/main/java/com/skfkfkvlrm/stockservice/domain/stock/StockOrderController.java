@@ -29,7 +29,10 @@ public class StockOrderController {
     @PostMapping("/sell")
     public ApiResponse<String> sellStock(@Valid @RequestBody StockOrderRequest request,
                             @RequestAttribute(name = "studentId", required = false) String studentId) {
-        if (studentId == null) {
+        if (studentId == null && org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null) {
+            studentId = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        }
+        if (studentId == null || "anonymousUser".equals(studentId)) {
             throw new UnauthorizedAccessException();
         }
         request.setStudentId(studentId);
@@ -41,7 +44,10 @@ public class StockOrderController {
     public ApiResponse<String> cancelOrder(@RequestParam("orderId") int orderId, 
                                            @RequestParam("stockId") int stockId,
                               @RequestAttribute(name = "studentId", required = false) String studentId) {
-        if (studentId == null) {
+        if (studentId == null && org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null) {
+            studentId = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        }
+        if (studentId == null || "anonymousUser".equals(studentId)) {
             throw new UnauthorizedAccessException();
         }
         stockOrderService.cancelOrder(orderId, studentId);

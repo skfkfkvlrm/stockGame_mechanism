@@ -66,7 +66,10 @@ public class StockDetailController {
     public ApiResponse<List<Order>> getMyOrders(
             @PathVariable("stockId") int stockId,
             @RequestAttribute(name = "studentId", required = false) String studentId) {
-        if (studentId == null) {
+        if (studentId == null && org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null) {
+            studentId = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        }
+        if (studentId == null || "anonymousUser".equals(studentId)) {
             return ApiResponse.error("로그인이 필요합니다.");
         }
         List<Order> myOrders = stockDetailService.getwaitingOrderList(stockId, studentId);
