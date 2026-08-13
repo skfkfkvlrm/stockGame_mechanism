@@ -89,20 +89,15 @@ public class StockDetailServiceImpl implements StockDetailService {
     }
 
     /**
-     * 二쇱 嫄곕 ?멸?李??쇱대? 二쇰Ц 紐⑸? 議고 (援李?留ㅽ ?????⑦?
+     * 주식 거래 호가창 실시간 주문 목록 조회
      * 
-     * [?硫???ㅺ? ??]:
-     * - ?ъ⑹媛 留ㅼ ?(type == "留ㅼ")? ?대┃?? ?: 泥닿껐 ?????? ??諛⑹ '留ㅻ ?멸? 紐⑸?'(getTotalSellOrder)? 諛?.
-     * - ?ъ⑹媛 留ㅻ ?(type == "留ㅻ")? ?대┃?? ?: 泥닿껐 ?????? ??諛⑹ '留ㅼ ?멸? 紐⑸?'(getTotalBuyOrder)? 諛?.
-     * ?곕쇱 ??쇰명?type怨?諛??? ?멸? 紐⑸?? 留ㅻ/留ㅼ媛 援李?Cross-Mapping)?? 寃? ?멸?李??以 ????濡吏????
-     * 
-     * @param stockId 二쇱 醫紐?ID
-     * @param type    ????ъ⑹? 嫄곕 ? 援щ? ("留ㅼ" ?? "留ㅻ")
-     * @return ?멸?李쎌 ?몄?? ?湲?二쇰Ц 紐⑸?
+     * @param stockId 주식 종목 ID
+     * @param type    호가 주문 구분 ("매도" / "SELL" 또는 "매수" / "BUY")
+     * @return 호가창에 표시할 대기 주문 목록
      */
     @Override
     public List<Order> getLiveOrderList(int stockId, String type) {
-        if ("留ㅼ".equalsIgnoreCase(type)) {
+        if ("SELL".equalsIgnoreCase(type) || "매도".equalsIgnoreCase(type)) {
             List<Order> sellOrders = stockDetailRepository.getTotalSellOrder(stockId);
             return sellOrders != null ? sellOrders : Collections.emptyList();
         } else {
