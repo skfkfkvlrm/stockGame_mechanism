@@ -3,6 +3,7 @@ package com.skfkfkvlrm.stockservice.domain.news;
 import com.skfkfkvlrm.stockservice.domain.stock.Stock;
 import com.skfkfkvlrm.stockservice.domain.stock.StockListRepository;
 import com.skfkfkvlrm.stockservice.domain.stock.StockDetailRepository;
+import com.skfkfkvlrm.stockservice.domain.stock.StockPriceHistoryRepository;
 import com.skfkfkvlrm.stockservice.domain.stock.Order;
 import com.skfkfkvlrm.stockservice.domain.stock.OrderStatus;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,8 @@ public class DynamicNewsService {
     private final NewsRepository newsRepository;
     private final StockListRepository stockListRepository;
     private final StockDetailRepository stockDetailRepository;
+    private final StockPriceHistoryRepository stockPriceHistoryRepository;
+    private final SimpMessagingTemplate messagingTemplate;
     private final RestTemplate restTemplate = new RestTemplate();
 
     private final String OLLAMA_URL = "http://localhost:11434/api/generate";
@@ -110,10 +114,19 @@ public class DynamicNewsService {
 
     private void applyNewsPriceFluctuation(Stock stock, boolean isPositive) {
         try {
+            // DB에서 최신 종목 정보(발행 잔량 포함)를 다시 조회하여 검증
+            Map<String, Object> pubInfo = stockDetailRepository.getStockPubInfo(stock.getStockId());
+            int latestPubBalance = 0;
+            if (pubInfo != null && pubInfo.containsKey("publication_balance") && pubInfo.get("publication_balance") != null) {
+                latestPubBalance = ((Number) pubInfo.get("publication_balance")).intValue();
+            } else {
+                latestPubBalance = stock.getPublicationBalance();
+            }
+
             // 발행잔량이 남아있는 경우(publication_balance > 0) 주가 변동 미적용
-            if (stock.getPublicationBalance() > 0) {
+            if (latestPubBalance > 0) {
                 log.info("[DynamicNews] 종목({})은 발행잔량({}주)이 남아있어 뉴스 주가 변동을 적용하지 않습니다.",
-                        stock.getName(), stock.getPublicationBalance());
+                        stock.getName(), latestPubBalance);
                 return;
             }
 
@@ -155,7 +168,13 @@ public class DynamicNewsService {
                 int systemSellOrderId = stockDetailRepository.insertOrder(sellOrder);
                 stockDetailRepository.setMatchedOrder(systemBuyOrderId, systemSellOrderId, 1, newPrice);
 
-                log.info("[DynamicNews] 뉴스 영향 주가 변동 완료 - 종목: {}, 어조: {}, 기존가: {}원 -> 변동가: {}원 (변동률: {}%.2f%%)",
+                // 일일 차트 시세 및 트랜잭션 수치 갱신
+                stockPriceHistoryRepository.upsertDailyPrice(stock.getStockId(), java.time.LocalDate.now(), newPrice, 1);
+
+                // 웹소켓 실시간 방송
+                messagingTemplate.convertAndSend("/topic/orders/" + stock.getStockId(), "ORDER_UPDATED");
+
+                log.info("[DynamicNews] 뉴스 영향 주가 변동 완료 - 종목: {}, 어조: {}, 기존가: {}원 -> 변동가: {}원 (변동률: {:.2f}%)",
                         stock.getName(), isPositive ? "긍정(+)" : "부정(-)", currentPrice, newPrice, changePercent);
             }
         } catch (Exception e) {
