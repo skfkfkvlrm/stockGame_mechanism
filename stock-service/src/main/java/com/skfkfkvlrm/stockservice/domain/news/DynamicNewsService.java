@@ -2,6 +2,9 @@ package com.skfkfkvlrm.stockservice.domain.news;
 
 import com.skfkfkvlrm.stockservice.domain.stock.Stock;
 import com.skfkfkvlrm.stockservice.domain.stock.StockListRepository;
+import com.skfkfkvlrm.stockservice.domain.stock.StockDetailRepository;
+import com.skfkfkvlrm.stockservice.domain.stock.Order;
+import com.skfkfkvlrm.stockservice.domain.stock.OrderStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
@@ -26,6 +29,7 @@ public class DynamicNewsService {
 
     private final NewsRepository newsRepository;
     private final StockListRepository stockListRepository;
+    private final StockDetailRepository stockDetailRepository;
     private final RestTemplate restTemplate = new RestTemplate();
 
     private final String OLLAMA_URL = "http://localhost:11434/api/generate";
@@ -40,6 +44,9 @@ public class DynamicNewsService {
         "[시장동향] %s 매수세 유입 속 관련 테마주 동반 상승 기류"
     };
 
+    /**
+     * 5분마다 등록된 종목(예: 새콤달콤, PC방, SM) 기반 실제 뉴스/Ollama AI 뉴스 자동 생성
+     */
     /**
      * 5분마다 등록된 종목(예: 새콤달콤, PC방, SM) 기반 실제 뉴스/Ollama AI 뉴스 자동 생성
      */
@@ -68,18 +75,91 @@ public class DynamicNewsService {
             String generatedNews = callOllamaForStockNews(targetStock, listedStocks);
 
             // 2. Ollama 응답 실패 시 실제 뉴스 템플릿 기반 Fallback 생성
+            boolean isPositive = true;
             if (generatedNews == null || generatedNews.trim().isEmpty()) {
-                String template = REAL_NEWS_TEMPLATES[random.nextInt(REAL_NEWS_TEMPLATES.length)];
+                int templateIdx = random.nextInt(REAL_NEWS_TEMPLATES.length);
+                String template = REAL_NEWS_TEMPLATES[templateIdx];
                 generatedNews = String.format("[%s] " + template, timestamp, targetStock.getName());
+                isPositive = templateIdx != 1; // [시황] 변동성 확대를 제외하면 기본적으로 긍정 템플릿
             } else {
                 generatedNews = String.format("[%s] [속보] %s", timestamp, generatedNews);
+                // 뉴스 어조 판단
+                isPositive = isPositiveNews(generatedNews);
             }
 
             newsRepository.insertNews(generatedNews);
             log.info("[DynamicNews] 등록된 종목({}) 기반 뉴스 생성 완료: {}", targetStock.getName(), generatedNews);
 
+            // 3. 뉴스가 주가에 미치는 변동 연동 (발행잔량이 0인 완판 종목에만 적용)
+            applyNewsPriceFluctuation(targetStock, isPositive);
+
         } catch (Exception e) {
             log.error("[DynamicNews] 뉴스 생성 중 오류 발생: {}", e.getMessage(), e);
+        }
+    }
+
+    private boolean isPositiveNews(String newsText) {
+        String[] negativeKeywords = {"하락", "부진", "감소", "우려", "악재", "손실", "급락", "악화", "둔화"};
+        for (String kw : negativeKeywords) {
+            if (newsText.contains(kw)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void applyNewsPriceFluctuation(Stock stock, boolean isPositive) {
+        try {
+            // 발행잔량이 남아있는 경우(publication_balance > 0) 주가 변동 미적용
+            if (stock.getPublicationBalance() > 0) {
+                log.info("[DynamicNews] 종목({})은 발행잔량({}주)이 남아있어 뉴스 주가 변동을 적용하지 않습니다.",
+                        stock.getName(), stock.getPublicationBalance());
+                return;
+            }
+
+            int currentPrice = stockDetailRepository.getStockPrice(stock.getStockId());
+            if (currentPrice <= 0) {
+                currentPrice = stock.getPublicationPrice() > 0 ? stock.getPublicationPrice() : 1000;
+            }
+
+            // 0.1% ~ 3.0% 범위 내의 무작위 변동률 계산
+            double changePercent = 0.1 + (2.9 * random.nextDouble()); // 0.1% ~ 3.0%
+            if (!isPositive) {
+                changePercent = -changePercent;
+            }
+
+            int newPrice = (int) Math.round(currentPrice * (1.0 + (changePercent / 100.0)));
+            if (newPrice < 1) newPrice = 1; // 최소 주가 1원
+
+            if (newPrice != currentPrice) {
+                // 뉴스 변동에 따른 시스템 자동 주문 체결 기록 생성
+                Order buyOrder = Order.builder()
+                        .content(OrderStatus.BUY)
+                        .price(newPrice)
+                        .amount(1)
+                        .state(OrderStatus.MATCHED)
+                        .studentId("SYSTEM_NEWS")
+                        .stockId(stock.getStockId())
+                        .build();
+
+                Order sellOrder = Order.builder()
+                        .content(OrderStatus.SELL)
+                        .price(newPrice)
+                        .amount(1)
+                        .state(OrderStatus.MATCHED)
+                        .studentId("SYSTEM_NEWS")
+                        .stockId(stock.getStockId())
+                        .build();
+
+                int systemBuyOrderId = stockDetailRepository.insertOrder(buyOrder);
+                int systemSellOrderId = stockDetailRepository.insertOrder(sellOrder);
+                stockDetailRepository.setMatchedOrder(systemBuyOrderId, systemSellOrderId, 1, newPrice);
+
+                log.info("[DynamicNews] 뉴스 영향 주가 변동 완료 - 종목: {}, 어조: {}, 기존가: {}원 -> 변동가: {}원 (변동률: {}%.2f%%)",
+                        stock.getName(), isPositive ? "긍정(+)" : "부정(-)", currentPrice, newPrice, changePercent);
+            }
+        } catch (Exception e) {
+            log.error("[DynamicNews] 뉴스 연동 주가 변동 처리 실패: {}", e.getMessage(), e);
         }
     }
 

@@ -35,8 +35,8 @@ public class StockOrderServiceImpl implements StockOrderService {
     }
 
     private void validateTickSize(int price) {
-        int tickSize = getTickSize(price);
-        if (price % tickSize != 0) {
+        // 1포인트(1원) 단위 거래 제한 해제: 1 이상의 정수 금액은 모두 자유 주문 허용
+        if (price <= 0) {
             throw new com.skfkfkvlrm.stockservice.exception.InvalidTickSizeException();
         }
     }
