@@ -13,6 +13,8 @@ spring:
             allowedOrigins:
               - "http://localhost:5173"
               - "http://127.0.0.1:5173"
+              - "http://localhost:5174"
+              - "http://127.0.0.1:5174"
             allowedMethods:
               - GET
               - POST
@@ -23,10 +25,14 @@ spring:
             allowedHeaders: "*"
             allowCredentials: true
       routes:
+        - id: admin-service
+          uri: lb://ADMIN-SERVICE
+          predicates:
+            - Path=/api/admin/**
         - id: member-service
           uri: lb://MEMBER-SERVICE
           predicates:
-            - Path=/api/members/**, /admin/**, /api/admin/**
+            - Path=/api/members/**
         - id: stock-service
           uri: lb://STOCK-SERVICE
           predicates:
