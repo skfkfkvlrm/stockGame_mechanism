@@ -106,9 +106,11 @@ public class StockDetailController {
     }
 
     @DeleteMapping("/admin/stocks/{stockId}")
+    @org.springframework.transaction.annotation.Transactional
     public ApiResponse<Boolean> deleteStockAdmin(@PathVariable("stockId") int stockId) {
+        stockDetailRepository.cancelWaitingOrdersByStockId(stockId);
         stockListRepository.deleteStock(stockId);
-        return ApiResponse.success("주식 종목이 상장폐지되었습니다.", true);
+        return ApiResponse.success("주식 종목이 상장폐지되었으며, 대기 중인 모든 호가 주문이 정리되었습니다.", true);
     }
 
     @GetMapping("/admin/market/status")

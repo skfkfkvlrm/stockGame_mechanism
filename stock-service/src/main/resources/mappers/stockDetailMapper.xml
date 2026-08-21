@@ -152,6 +152,11 @@
 		LEFT JOIN students s ON (o.student_id = CAST(s.id AS CHAR) OR o.student_id = s.student_id)
 		WHERE o.order_id = #{orderId}
 	</select>
+	<update id="cancelWaitingOrdersByStockId">
+		UPDATE orders
+		SET state = 'CANCELLED'
+		WHERE stock_id = #{stockId} AND state IN ('대기', 'WAITING')
+	</update>
 </mapper>
 
 

@@ -57,4 +57,5 @@ public interface StockDetailRepository {
 
     StockOrderResponse getOrderById(int orderId);
     int insertOrder(Order order);
+    int cancelWaitingOrdersByStockId(@Param("stockId") int stockId);
 }

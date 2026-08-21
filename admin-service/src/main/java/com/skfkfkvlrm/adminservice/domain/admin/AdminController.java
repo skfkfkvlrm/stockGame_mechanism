@@ -20,6 +20,7 @@ public class AdminController {
     private final StockClient stockClient;
     private final MemberClient memberClient;
     private final PointClient pointClient;
+    private final com.skfkfkvlrm.adminservice.client.CouponClient couponClient;
 
     // --- 시장 개장 / 휴장 상태 관리 ---
     @GetMapping("/market/status")
@@ -78,5 +79,26 @@ public class AdminController {
     @DeleteMapping("/students/{studentId}")
     public ApiResponse<Boolean> deleteStudent(@PathVariable("studentId") String studentId) {
         return memberClient.deleteStudent(studentId);
+    }
+
+    // --- 쿠폰 상품 관리 (Coupon-Service 위임) ---
+    @GetMapping("/coupons")
+    public ApiResponse<List<Map<String, Object>>> getCoupons() {
+        return couponClient.getAllCoupons();
+    }
+
+    @PostMapping("/coupons")
+    public ApiResponse<Boolean> createCoupon(@RequestBody Map<String, Object> body) {
+        return couponClient.createCoupon(body);
+    }
+
+    @PutMapping("/coupons/{couponId}")
+    public ApiResponse<Boolean> updateCoupon(@PathVariable("couponId") int couponId, @RequestBody Map<String, Object> body) {
+        return couponClient.updateCoupon(couponId, body);
+    }
+
+    @DeleteMapping("/coupons/{couponId}")
+    public ApiResponse<Boolean> deleteCoupon(@PathVariable("couponId") int couponId) {
+        return couponClient.deleteCoupon(couponId);
     }
 }
