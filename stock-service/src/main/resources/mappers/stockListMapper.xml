@@ -11,7 +11,8 @@
 		ORDER BY stock_id ASC
 	</select>
 
-	<insert id="insertStock">
+	<insert id="insertStock" parameterType="com.skfkfkvlrm.stockservice.domain.admin.StockRequest"
+	        useGeneratedKeys="true" keyProperty="stockId" keyColumn="stock_id">
 		INSERT INTO stocks (name, content, publication_price, publication_balance, prev_price, status)
 		VALUES (#{name}, #{content}, #{publicationPrice}, #{publicationBalance}, #{publicationPrice}, COALESCE(#{status}, 'LISTED'))
 	</insert>

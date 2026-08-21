@@ -118,10 +118,22 @@
 		WHERE o.stock_id = #{stockId}
 		  AND o.state IN ('대기', 'WAITING')
 		  AND o.content = #{content}
-		  AND o.price = #{orderPrice}
+		  <if test="content == 'SELL'">
+		  AND o.price &lt;= #{orderPrice}
+		  </if>
+		  <if test="content == 'BUY'">
+		  AND o.price &gt;= #{orderPrice}
+		  </if>
 		  AND COALESCE(s.student_id, o.student_id) != #{studentId}
-		ORDER BY created_date ASC
-			FOR UPDATE
+		ORDER BY 
+		  <if test="content == 'SELL'">
+		  o.price ASC,
+		  </if>
+		  <if test="content == 'BUY'">
+		  o.price DESC,
+		  </if>
+		  o.created_date ASC
+		FOR UPDATE
 	</select>
 	<update id="updateOrder">
 		UPDATE orders

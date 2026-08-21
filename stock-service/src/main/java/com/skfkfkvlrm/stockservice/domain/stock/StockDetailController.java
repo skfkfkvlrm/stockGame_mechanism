@@ -18,6 +18,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class StockDetailController {
     private final StockDetailService stockDetailService;
+    private final StockDetailRepository stockDetailRepository;
     private final StockPriceHistoryRepository stockPriceHistoryRepository;
     private final StockListRepository stockListRepository;
     private final com.skfkfkvlrm.stockservice.domain.admin.MarketSettingsRepository marketSettingsRepository;
@@ -78,9 +79,24 @@ public class StockDetailController {
     }
 
     @PostMapping("/admin/stocks")
+    @org.springframework.transaction.annotation.Transactional
     public ApiResponse<Boolean> createStockAdmin(@RequestBody com.skfkfkvlrm.stockservice.domain.admin.StockRequest request) {
         stockListRepository.insertStock(request);
-        return ApiResponse.success("신규 주식 종목이 상장되었습니다.", true);
+        
+        // [Step 1-B: LP 초기 지정가 매도 주문 자동 배치]
+        if (request.getPublicationBalance() > 0 && request.getPublicationPrice() > 0) {
+            Order lpSellOrder = Order.builder()
+                    .stockId(request.getStockId())
+                    .studentId("SYSTEM_LP")
+                    .content(OrderStatus.SELL)
+                    .price(request.getPublicationPrice())
+                    .amount(request.getPublicationBalance())
+                    .state(OrderStatus.WAITING)
+                    .build();
+            stockDetailRepository.insertOrder(lpSellOrder);
+        }
+        
+        return ApiResponse.success("신규 주식 종목이 상장되었으며, LP 초기 매도 물량이 호가창에 배치되었습니다.", true);
     }
 
     @PutMapping("/admin/stocks/{stockId}")

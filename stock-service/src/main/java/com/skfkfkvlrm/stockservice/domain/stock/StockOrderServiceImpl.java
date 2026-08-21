@@ -91,34 +91,8 @@ public class StockOrderServiceImpl implements StockOrderService {
         if (currentPoints < totalOrderPrice) {
             throw new com.skfkfkvlrm.stockservice.exception.StockGameException(com.skfkfkvlrm.stockservice.exception.ErrorCode.INSUFFICIENT_POINT);
         }
-        // 2. 발행 정보 확인
-        Map<String, Object> pubInfo = stockDetailRepository.getStockPubInfo(request.getStockId());
-        int pubAmount = getIntOrDefault(pubInfo, "publication_balance");
-        int pubPrice = getIntOrDefault(pubInfo, "publication_price");
-        // a. 발행 주식 거래 (매수 가격이 발행가와 같을 때만)
-        if (pubAmount > 0 && request.getPrice() >= pubPrice) {
-            if (request.getPrice() > pubPrice) {
-                throw new com.skfkfkvlrm.stockservice.exception.StockGameException(com.skfkfkvlrm.stockservice.exception.ErrorCode.INVALID_PUBLICATION_PRICE);
-            }
-            if (request.getAmount() > pubAmount) {
-                throw new com.skfkfkvlrm.stockservice.exception.StockGameException(com.skfkfkvlrm.stockservice.exception.ErrorCode.EXCEEDED_PUBLICATION_BALANCE);
-            }
-
-            Order order = createOrder(request, OrderStatus.BUY, OrderStatus.MATCHED);
-            stockDetailRepository.insertOrder(order);
-            stockDetailRepository.setMatchedOrder(order.getOrderId(), null, request.getAmount(), request.getPrice());
-            stockDetailRepository.setStockPubBalance(request.getAmount(), request.getStockId());
-            stockDetailRepository.setStudentPointDown(totalOrderPrice, request.getStudentId());
-
-            stockPriceHistoryRepository.upsertDailyPrice(request.getStockId(), LocalDate.now(), request.getPrice(), request.getAmount());
-
-            broadcastOrderUpdate(request.getStockId());
-            notifyStudent(request.getStudentId(), request.getStockId() + " 종목 매수가 체결되었습니다.");
-
-            return "매수 주문이 체결되었습니다.";
-        }
-        // b. 학생 간 거래 (부분 체결 로직)
-        // 매수 시 "SELL" 대기열을 조회
+        // 2. 오더북(Order Book) 기반 지정가 매칭 (LP 매도 주문 및 타 학생 매도 주문 포함)
+        // 매수 시 대기 중인 매도(SELL) 주문 조회 (가격 오름차순, 시간 오름차순)
         List<Order> sellOrders = stockDetailRepository.getMatchOrderList(
                 request.getStockId(), OrderStatus.SELL.name(), request.getPrice(), request.getStudentId());
 
@@ -156,7 +130,11 @@ public class StockOrderServiceImpl implements StockOrderService {
             // 거래내역 및 포인트 정산
             stockDetailRepository.setMatchedOrder(buyOrderId, sellOrderId, matchAmount, matchPrice);
             stockDetailRepository.setStudentPointDown(matchTotalPrice, request.getStudentId());
-            stockDetailRepository.setStudentPointUp(matchTotalPrice, sellOrder.getStudentId());
+            
+            // 일반 학생 매도자인 경우에만 포인트 입금 (SYSTEM_LP는 시스템 공급자)
+            if (!"SYSTEM_LP".equals(sellOrder.getStudentId())) {
+                stockDetailRepository.setStudentPointUp(matchTotalPrice, sellOrder.getStudentId());
+            }
 
             stockPriceHistoryRepository.upsertDailyPrice(request.getStockId(), LocalDate.now(), matchPrice, matchAmount);
         }
