@@ -17,13 +17,7 @@ public class NewsController {
     private final NewsRepository newsRepository;
 
     @GetMapping
-    public ApiResponse<List<NewsResponse>> getNews(@RequestAttribute(name = "studentId", required = false) String studentId) {
-        if (studentId == null && org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null) {
-            studentId = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
-        }
-        if (studentId == null || "anonymousUser".equals(studentId)) {
-            return ApiResponse.error("로그인이 필요합니다.");
-        }
+    public ApiResponse<List<NewsResponse>> getNews() {
         List<NewsResponse> newsList = newsRepository.getNewsList();
         return ApiResponse.success("News data", newsList);
     }

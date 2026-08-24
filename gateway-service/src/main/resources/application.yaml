@@ -48,7 +48,7 @@ spring:
         - id: ai-news-service
           uri: lb://AI-NEWS-SERVICE
           predicates:
-            - Path=/api/ai/**, /api/news/**
+            - Path=/api/ai/**
 
 eureka:
   client:
