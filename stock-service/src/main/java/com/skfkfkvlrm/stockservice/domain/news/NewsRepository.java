@@ -5,6 +5,6 @@ import java.util.List;
 
 @Mapper
 public interface NewsRepository {
-    List<String> getNewsList();
+    List<NewsResponse> getNewsList();
     void insertNews(String content);
 }

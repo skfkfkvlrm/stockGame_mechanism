@@ -2,8 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.skfkfkvlrm.stockservice.domain.news.NewsRepository">
 
-<select id="getNewsList" resultType="string">
-	SELECT content FROM news ORDER BY news_id DESC, created_date DESC
+<select id="getNewsList" resultType="com.skfkfkvlrm.stockservice.domain.news.NewsResponse">
+	SELECT news_id AS newsId, content, created_date AS createdDate 
+	FROM news 
+	ORDER BY news_id DESC, created_date DESC
 </select>
 
 <insert id="insertNews" parameterType="string">
