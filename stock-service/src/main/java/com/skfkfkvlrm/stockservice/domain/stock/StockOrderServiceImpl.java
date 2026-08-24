@@ -29,7 +29,7 @@ public class StockOrderServiceImpl implements StockOrderService {
 
     private void validateMarketOpen() {
         MarketSettings settings = marketSettingsRepository.findById(1).orElse(null);
-        if (settings != null && !settings.isMarketOpen()) {
+        if (settings != null && !settings.calculateIsMarketOpen()) {
             throw new com.skfkfkvlrm.stockservice.exception.MarketClosedException();
         }
     }

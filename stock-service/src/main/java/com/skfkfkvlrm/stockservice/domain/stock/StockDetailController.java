@@ -123,7 +123,22 @@ public class StockDetailController {
     public ApiResponse<Map<String, Object>> getMarketStatus() {
         com.skfkfkvlrm.stockservice.domain.admin.MarketSettings settings = marketSettingsRepository.findById(1).orElse(null);
         Map<String, Object> data = new HashMap<>();
-        data.put("marketOpen", settings == null || settings.isMarketOpen());
+        if (settings == null) {
+            data.put("marketOpen", true);
+            data.put("mode", "AUTO");
+            data.put("openTime", "09:00");
+            data.put("closeTime", "15:30");
+            data.put("statusCode", "OPEN");
+        } else {
+            boolean isOpen = settings.calculateIsMarketOpen();
+            String status = settings.calculateStatusCode();
+            data.put("marketOpen", isOpen);
+            data.put("mode", settings.getMode());
+            data.put("openTime", settings.getOpenTime());
+            data.put("closeTime", settings.getCloseTime());
+            data.put("operatingDays", settings.getOperatingDays());
+            data.put("statusCode", status);
+        }
         return ApiResponse.success("Market status", data);
     }
 
@@ -134,14 +149,47 @@ public class StockDetailController {
             settings = com.skfkfkvlrm.stockservice.domain.admin.MarketSettings.builder()
                     .id(1)
                     .isMarketOpen(false)
+                    .mode("MANUAL")
+                    .openTime("09:00")
+                    .closeTime("15:30")
+                    .statusCode("MANUAL_PAUSE")
                     .build();
         } else {
+            settings.setMode("MANUAL");
             settings.setMarketOpen(!settings.isMarketOpen());
+            settings.setStatusCode(settings.isMarketOpen() ? "OPEN" : "MANUAL_PAUSE");
         }
         marketSettingsRepository.save(settings);
 
         Map<String, Object> data = new HashMap<>();
         data.put("marketOpen", settings.isMarketOpen());
+        data.put("mode", settings.getMode());
+        data.put("openTime", settings.getOpenTime());
+        data.put("closeTime", settings.getCloseTime());
+        data.put("statusCode", settings.getStatusCode());
         return ApiResponse.success("Market status toggled", data);
+    }
+
+    @PutMapping("/admin/market/settings")
+    public ApiResponse<Map<String, Object>> updateMarketSettings(@RequestBody Map<String, Object> body) {
+        com.skfkfkvlrm.stockservice.domain.admin.MarketSettings settings = marketSettingsRepository.findById(1).orElse(null);
+        if (settings == null) {
+            settings = com.skfkfkvlrm.stockservice.domain.admin.MarketSettings.builder().id(1).build();
+        }
+        if (body.containsKey("mode")) settings.setMode(String.valueOf(body.get("mode")));
+        if (body.containsKey("openTime")) settings.setOpenTime(String.valueOf(body.get("openTime")));
+        if (body.containsKey("closeTime")) settings.setCloseTime(String.valueOf(body.get("closeTime")));
+        if (body.containsKey("marketOpen")) settings.setMarketOpen(Boolean.parseBoolean(String.valueOf(body.get("marketOpen"))));
+
+        settings.setStatusCode(settings.calculateStatusCode());
+        marketSettingsRepository.save(settings);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("marketOpen", settings.calculateIsMarketOpen());
+        data.put("mode", settings.getMode());
+        data.put("openTime", settings.getOpenTime());
+        data.put("closeTime", settings.getCloseTime());
+        data.put("statusCode", settings.calculateStatusCode());
+        return ApiResponse.success("Market settings updated", data);
     }
 }
