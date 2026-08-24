@@ -113,4 +113,10 @@ public class CouponController {
         couponRepository.deleteCoupon(couponId);
         return ApiResponse.success("쿠폰이 삭제되었습니다.", true);
     }
+
+    @GetMapping("/admin/students/{studentId}")
+    public ApiResponse<List<CouponPurchase>> getStudentCouponsAdmin(@PathVariable("studentId") String studentId) {
+        List<CouponPurchase> coupons = couponRepository.getMyCouponList(studentId);
+        return ApiResponse.success("Student coupons fetched", coupons);
+    }
 }

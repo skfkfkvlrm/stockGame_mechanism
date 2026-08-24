@@ -134,6 +134,16 @@ public class AdminController {
         return memberClient.deleteStudent(studentId);
     }
 
+    @GetMapping("/students/{studentId}/points")
+    public ApiResponse<List<Object>> getStudentPointHistory(@PathVariable("studentId") String studentId) {
+        return pointClient.getStudentPointHistory(studentId);
+    }
+
+    @GetMapping("/students/{studentId}/coupons")
+    public ApiResponse<List<Map<String, Object>>> getStudentCoupons(@PathVariable("studentId") String studentId) {
+        return couponClient.getStudentCoupons(studentId);
+    }
+
     // --- 쿠폰 상품 관리 (Coupon-Service 위임) ---
     @GetMapping("/coupons")
     public ApiResponse<List<Map<String, Object>>> getCoupons() {

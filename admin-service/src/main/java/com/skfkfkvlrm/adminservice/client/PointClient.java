@@ -14,4 +14,7 @@ public interface PointClient {
 
     @PostMapping("/api/internal/points/{studentId}/decrease")
     ApiResponse<Boolean> decreasePoint(@PathVariable("studentId") String studentId, @RequestParam("amount") int amount);
+
+    @GetMapping("/api/history/admin/{studentId}")
+    ApiResponse<java.util.List<Object>> getStudentPointHistory(@PathVariable("studentId") String studentId);
 }

@@ -21,4 +21,7 @@ public interface CouponClient {
 
     @DeleteMapping("/api/coupons/admin/coupons/{couponId}")
     ApiResponse<Boolean> deleteCoupon(@PathVariable("couponId") int couponId);
+
+    @GetMapping("/api/coupons/admin/students/{studentId}")
+    ApiResponse<List<Map<String, Object>>> getStudentCoupons(@PathVariable("studentId") String studentId);
 }

@@ -27,4 +27,10 @@ public class MyPointHistoryController {
         List<PointHistoryResponse> history = myPointHistoryRepository.getMyPointHistoryList(studentId);
         return ApiResponse.success("Point history data", history);
     }
+
+    @GetMapping("/admin/{studentId}")
+    public ApiResponse<List<PointHistoryResponse>> getStudentPointHistoryAdmin(@org.springframework.web.bind.annotation.PathVariable("studentId") String studentId) {
+        List<PointHistoryResponse> history = myPointHistoryRepository.getMyPointHistoryList(studentId);
+        return ApiResponse.success("Student point history data fetched", history);
+    }
 }
