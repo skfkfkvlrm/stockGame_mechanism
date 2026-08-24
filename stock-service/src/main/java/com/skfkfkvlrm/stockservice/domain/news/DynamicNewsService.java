@@ -78,107 +78,22 @@ public class DynamicNewsService {
             // 1. Ollama LLM 호출 시도 (등록된 종목명 기반)
             String generatedNews = callOllamaForStockNews(targetStock, listedStocks);
 
-            // 2. Ollama 응답 실패 시 실제 뉴스 템플릿 기반 Fallback 생성
-            boolean isPositive = true;
             if (generatedNews == null || generatedNews.trim().isEmpty()) {
                 int templateIdx = random.nextInt(REAL_NEWS_TEMPLATES.length);
                 String template = REAL_NEWS_TEMPLATES[templateIdx];
                 generatedNews = String.format("[%s] " + template, timestamp, targetStock.getName());
-                isPositive = templateIdx != 1; // [시황] 변동성 확대를 제외하면 기본적으로 긍정 템플릿
             } else {
                 generatedNews = String.format("[%s] [속보] %s", timestamp, generatedNews);
-                // 뉴스 어조 판단
-                isPositive = isPositiveNews(generatedNews);
             }
 
             newsRepository.insertNews(generatedNews);
             log.info("[DynamicNews] 등록된 종목({}) 기반 뉴스 생성 완료: {}", targetStock.getName(), generatedNews);
 
-            // 3. 뉴스가 주가에 미치는 변동 연동 (발행잔량이 0인 완판 종목에만 적용)
-            applyNewsPriceFluctuation(targetStock, isPositive);
+            // 뉴스 브로드캐스트 (주가 인위적 변동 없이 순수 뉴스 정보만 전파)
+            messagingTemplate.convertAndSend("/topic/news", generatedNews);
 
         } catch (Exception e) {
             log.error("[DynamicNews] 뉴스 생성 중 오류 발생: {}", e.getMessage(), e);
-        }
-    }
-
-    private boolean isPositiveNews(String newsText) {
-        String[] negativeKeywords = {"하락", "부진", "감소", "우려", "악재", "손실", "급락", "악화", "둔화"};
-        for (String kw : negativeKeywords) {
-            if (newsText.contains(kw)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private void applyNewsPriceFluctuation(Stock stock, boolean isPositive) {
-        try {
-            // DB에서 최신 종목 정보(발행 잔량 포함)를 다시 조회하여 검증
-            Map<String, Object> pubInfo = stockDetailRepository.getStockPubInfo(stock.getStockId());
-            int latestPubBalance = 0;
-            if (pubInfo != null && pubInfo.containsKey("publication_balance") && pubInfo.get("publication_balance") != null) {
-                latestPubBalance = ((Number) pubInfo.get("publication_balance")).intValue();
-            } else {
-                latestPubBalance = stock.getPublicationBalance();
-            }
-
-            // 발행잔량이 남아있는 경우(publication_balance > 0) 주가 변동 미적용
-            if (latestPubBalance > 0) {
-                log.info("[DynamicNews] 종목({})은 발행잔량({}주)이 남아있어 뉴스 주가 변동을 적용하지 않습니다.",
-                        stock.getName(), latestPubBalance);
-                return;
-            }
-
-            int currentPrice = stockDetailRepository.getStockPrice(stock.getStockId());
-            if (currentPrice <= 0) {
-                currentPrice = stock.getPublicationPrice() > 0 ? stock.getPublicationPrice() : 1000;
-            }
-
-            // 0.1% ~ 3.0% 범위 내의 무작위 변동률 계산
-            double changePercent = 0.1 + (2.9 * random.nextDouble()); // 0.1% ~ 3.0%
-            if (!isPositive) {
-                changePercent = -changePercent;
-            }
-
-            int newPrice = (int) Math.round(currentPrice * (1.0 + (changePercent / 100.0)));
-            if (newPrice < 1) newPrice = 1; // 최소 주가 1원
-
-            if (newPrice != currentPrice) {
-                // 뉴스 변동에 따른 시스템 자동 주문 체결 기록 생성
-                Order buyOrder = Order.builder()
-                        .content(OrderStatus.BUY)
-                        .price(newPrice)
-                        .amount(1)
-                        .state(OrderStatus.MATCHED)
-                        .studentId("SYSTEM_NEWS")
-                        .stockId(stock.getStockId())
-                        .build();
-
-                Order sellOrder = Order.builder()
-                        .content(OrderStatus.SELL)
-                        .price(newPrice)
-                        .amount(1)
-                        .state(OrderStatus.MATCHED)
-                        .studentId("SYSTEM_NEWS")
-                        .stockId(stock.getStockId())
-                        .build();
-
-                int systemBuyOrderId = stockDetailRepository.insertOrder(buyOrder);
-                int systemSellOrderId = stockDetailRepository.insertOrder(sellOrder);
-                stockDetailRepository.setMatchedOrder(systemBuyOrderId, systemSellOrderId, 1, newPrice);
-
-                // 일일 차트 시세 및 트랜잭션 수치 갱신
-                stockPriceHistoryRepository.upsertDailyPrice(stock.getStockId(), java.time.LocalDate.now(), newPrice, 1);
-
-                // 웹소켓 실시간 방송
-                messagingTemplate.convertAndSend("/topic/orders/" + stock.getStockId(), "ORDER_UPDATED");
-
-                log.info("[DynamicNews] 뉴스 영향 주가 변동 완료 - 종목: {}, 어조: {}, 기존가: {}원 -> 변동가: {}원 (변동률: {:.2f}%)",
-                        stock.getName(), isPositive ? "긍정(+)" : "부정(-)", currentPrice, newPrice, changePercent);
-            }
-        } catch (Exception e) {
-            log.error("[DynamicNews] 뉴스 연동 주가 변동 처리 실패: {}", e.getMessage(), e);
         }
     }
 
