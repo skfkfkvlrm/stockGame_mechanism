@@ -25,6 +25,7 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String token = resolveToken(request);
+        System.out.println("[Admin JwtFilter] URI: " + request.getRequestURI() + ", token exists: " + StringUtils.hasText(token));
 
         if (StringUtils.hasText(token) && jwtUtil.validateToken(token)) {
             String studentId = jwtUtil.getStudentId(token);
@@ -40,10 +41,14 @@ public class JwtFilter extends OncePerRequestFilter {
                 authorities.add(new SimpleGrantedAuthority("ROLE_STUDENT"));
             }
 
+            System.out.println("[Admin JwtFilter] studentId: " + studentId + ", role: " + role + ", authorities: " + authorities);
+
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(studentId, null, authorities);
             SecurityContextHolder.getContext().setAuthentication(authentication);
             
             request.setAttribute("studentId", studentId);
+        } else {
+            System.out.println("[Admin JwtFilter] Token validation failed or no token!");
         }
 
         filterChain.doFilter(request, response);
