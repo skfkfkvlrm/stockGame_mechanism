@@ -113,6 +113,12 @@ public class StockDetailController {
         return ApiResponse.success("주식 종목이 상장폐지되었으며, 대기 중인 모든 호가 주문이 정리되었습니다.", true);
     }
 
+    @GetMapping("/admin/stocks/{stockId}/transactions")
+    public ApiResponse<List<Map<String, Object>>> getStockTransactionsAdmin(@PathVariable("stockId") int stockId) {
+        List<Map<String, Object>> transactions = stockDetailRepository.getStockTransactionsByStockId(stockId);
+        return ApiResponse.success("Stock transactions fetched", transactions);
+    }
+
     @GetMapping("/admin/market/status")
     public ApiResponse<Map<String, Object>> getMarketStatus() {
         com.skfkfkvlrm.stockservice.domain.admin.MarketSettings settings = marketSettingsRepository.findById(1).orElse(null);

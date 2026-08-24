@@ -65,6 +65,11 @@ public class AdminController {
         return stockClient.deleteStock(stockId);
     }
 
+    @GetMapping("/stocks/{stockId}/transactions")
+    public ApiResponse<List<Object>> getStockTransactions(@PathVariable("stockId") int stockId) {
+        return stockClient.getStockTransactions(stockId);
+    }
+
     // --- 학생 계정 및 포인트 관리 (Member-Service & Point-Service 위임) ---
     @GetMapping("/students")
     public ApiResponse<List<Map<String, Object>>> getStudents() {

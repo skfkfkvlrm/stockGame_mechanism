@@ -157,6 +157,25 @@
 		SET state = 'CANCELLED'
 		WHERE stock_id = #{stockId} AND state IN ('대기', 'WAITING')
 	</update>
+	<select id="getStockTransactionsByStockId" parameterType="int" resultType="map">
+		SELECT 
+			t.id AS transaction_id,
+			t.created_date AS created_date,
+			t.amount AS amount,
+			t.price AS price,
+			(t.amount * t.price) AS total_price,
+			COALESCE(s_buy.student_id, o_buy.student_id) AS buyer_student_id,
+			COALESCE(s_buy.name, '시스템(매수)') AS buyer_name,
+			COALESCE(s_sell.student_id, o_sell.student_id) AS seller_student_id,
+			COALESCE(s_sell.name, CASE WHEN o_sell.student_id = 'SYSTEM_LP' THEN '초기발행(LP)' ELSE '시스템(매도)' END) AS seller_name
+		FROM stock_transactions t
+		JOIN orders o_buy ON t.buy_order_id = o_buy.order_id
+		LEFT JOIN students s_buy ON (o_buy.student_id = CAST(s_buy.id AS CHAR) OR o_buy.student_id = s_buy.student_id)
+		LEFT JOIN orders o_sell ON t.sell_order_id = o_sell.order_id
+		LEFT JOIN students s_sell ON (o_sell.student_id = CAST(s_sell.id AS CHAR) OR o_sell.student_id = s_sell.student_id)
+		WHERE o_buy.stock_id = #{stockId}
+		ORDER BY t.created_date DESC, t.id DESC
+	</select>
 </mapper>
 
 

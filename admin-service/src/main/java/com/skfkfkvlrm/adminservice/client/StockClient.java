@@ -20,4 +20,7 @@ public interface StockClient {
 
     @DeleteMapping("/api/stock/admin/stocks/{stockId}")
     ApiResponse<Boolean> deleteStock(@PathVariable("stockId") int stockId);
+
+    @GetMapping("/api/stock/admin/stocks/{stockId}/transactions")
+    ApiResponse<List<Object>> getStockTransactions(@PathVariable("stockId") int stockId);
 }
