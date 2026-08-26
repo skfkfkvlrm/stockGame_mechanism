@@ -24,9 +24,23 @@ public class CouponServiceImpl implements CouponService {
         }
 
         // OpenFeign 포인트 차감
-        pointClient.decreasePoint(studentId, price);
+        ApiResponse<Boolean> decreaseRes = pointClient.decreasePoint(studentId, price);
+        if (decreaseRes == null || Boolean.FALSE.equals(decreaseRes.getData())) {
+            throw new IllegalStateException("포인트 차감 처리에 실패했습니다.");
+        }
 
-        couponRepository.insertCouponPurchase(studentId, couponId, CouponPurchaseStatus.UNUSED.name());
+        try {
+            couponRepository.insertCouponPurchase(studentId, couponId, CouponPurchaseStatus.UNUSED.name());
+        } catch (Exception e) {
+            // [Saga Compensation] 로컬 DB 인서트 실패 시 원격 포인트 복구
+            try {
+                pointClient.increasePoint(studentId, price);
+            } catch (Exception ex) {
+                // 로그 기록 등 보상 실패 방어
+                System.err.println("[CRITICAL] Saga Compensation Failed: studentId=" + studentId + ", refundAmount=" + price);
+            }
+            throw new RuntimeException("쿠폰 발급 중 오류가 발생하여 결제가 취소되었습니다.", e);
+        }
         return true;
     }
 

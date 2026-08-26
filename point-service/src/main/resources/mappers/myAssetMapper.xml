@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.skfkfkvlrm.pointservice.domain.point.MyAssetRepository">
 
@@ -111,6 +111,34 @@
           AND o.stock_id = #{stockId}
           AND o.state IN ('체결', 'MATCHED')
         GROUP BY stock_id
+    </select>
+
+    <select id="getMyStockAssetList" resultType="com.skfkfkvlrm.pointservice.domain.common.StockInfoResponse">
+        SELECT 
+            st.name AS stockName,
+            sub.amount AS amount,
+            sub.current_price AS currentPrice,
+            sub.avg_price AS averagePrice,
+            sub.purchase_price AS purchasePrice,
+            ((sub.amount * sub.current_price) - sub.purchase_price) AS profit
+        FROM (
+            SELECT 
+                o.stock_id,
+                SUM(CASE WHEN o.content IN ('매수', 'BUY') THEN o.amount ELSE -o.amount END) AS amount,
+                SUM(CASE WHEN o.content IN ('매수', 'BUY') THEN o.price * o.amount ELSE 0 END) AS purchase_price,
+                ROUND(SUM(CASE WHEN o.content IN ('매수', 'BUY') THEN o.price * o.amount ELSE 0 END) / 
+                      NULLIF(SUM(CASE WHEN o.content IN ('매수', 'BUY') THEN o.amount ELSE 0 END), 0)) AS avg_price,
+                COALESCE(
+                    (SELECT t.price FROM stock_transactions t JOIN orders ord ON t.buy_order_id = ord.order_id WHERE ord.stock_id = o.stock_id ORDER BY t.created_date DESC LIMIT 1),
+                    (SELECT s.publication_price FROM stocks s WHERE s.stock_id = o.stock_id)
+                ) AS current_price
+            FROM orders o
+            WHERE (o.student_id = #{studentId} OR o.student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1))
+              AND o.state IN ('체결', 'MATCHED')
+            GROUP BY o.stock_id
+            HAVING SUM(CASE WHEN o.content IN ('매수', 'BUY') THEN o.amount ELSE -o.amount END) > 0
+        ) sub
+        JOIN stocks st ON sub.stock_id = st.stock_id
     </select>
 
 </mapper>

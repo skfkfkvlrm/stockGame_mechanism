@@ -27,11 +27,8 @@ public class MemberServiceImpl implements MemberService {
     @Override
     @Transactional
     public StudentResponse login(StudentLoginRequest request) {
-        System.out.println("[MemberService Debug] Login Attempt - studentId: " + request.getStudentId() + ", passLen: " + (request.getPassword() != null ? request.getPassword().length() : 0));
         // 1. students 테이블 조회
         Map<String, Object> savedData = memberRepository.findByStudentId(request.getStudentId());
-        System.out.println("[MemberService Debug] savedData found: " + (savedData != null));
-
 
         if (savedData != null) {
             String savedPassword = (String) savedData.get("password");
@@ -56,14 +53,10 @@ public class MemberServiceImpl implements MemberService {
                         .totalPoint(savedData.get("total_point") != null ? ((Number) savedData.get("total_point")).intValue() : 0)
                         .role(role)
                         .build();
-            } else {
-                System.out.println("[MemberService Debug] Password mismatch for studentId: " + request.getStudentId() + ". Saved: " + savedPassword + " vs Input: " + request.getPassword());
             }
-
         }
 
-
-        // 2. app_users 테이블 조회
+        // 2. app_users 테이블 조회 (DB에 등록된 관리자 및 운영매니저 계정)
         var appUserOpt = appUserRepository.findByUsername(request.getStudentId());
         if (appUserOpt.isPresent()) {
             var appUser = appUserOpt.get();
@@ -78,19 +71,6 @@ public class MemberServiceImpl implements MemberService {
                         .role(appUser.getRole().name())
                         .build();
             }
-        }
-
-        // 3. 디폴트 admin fallback (admin / 1234)
-        if ("admin".equals(request.getStudentId()) && "1234".equals(request.getPassword())) {
-            return StudentResponse.builder()
-                    .studentId("admin")
-                    .name("최고관리자")
-                    .grade(0)
-                    .className("관리자")
-                    .classNumber(0)
-                    .totalPoint(99999999)
-                    .role("ROLE_ADMIN")
-                    .build();
         }
 
         throw new IllegalArgumentException("아이디 또는 비밀번호가 올바르지 않습니다.");
@@ -133,18 +113,6 @@ public class MemberServiceImpl implements MemberService {
                     .classNumber(0)
                     .totalPoint(99999999)
                     .role(appUser.getRole().name())
-                    .build();
-        }
-
-        if ("admin".equals(studentId)) {
-            return StudentResponse.builder()
-                    .studentId("admin")
-                    .name("최고관리자")
-                    .grade(0)
-                    .className("관리자")
-                    .classNumber(0)
-                    .totalPoint(99999999)
-                    .role("ROLE_ADMIN")
                     .build();
         }
 

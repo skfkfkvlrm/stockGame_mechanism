@@ -1,5 +1,6 @@
 package com.skfkfkvlrm.pointservice.domain.point;
 
+import com.skfkfkvlrm.pointservice.domain.common.StockInfoResponse;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import java.util.List;
@@ -21,4 +22,6 @@ public interface MyAssetRepository {
     int getAveragePrice(@Param("studentId") String studentId, @Param("stockId") int stockId, @Param("state") String state, @Param("content") String content);
     int getPurchasePrice(@Param("studentId") String studentId, @Param("stockId") int stockId, @Param("state") String state, @Param("content") String content);
     int getStockProfit(@Param("studentId") String studentId, @Param("stockId") int stockId, @Param("state") String state);
+
+    List<StockInfoResponse> getMyStockAssetList(@Param("studentId") String studentId);
 }

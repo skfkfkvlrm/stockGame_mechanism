@@ -8,6 +8,7 @@ import com.skfkfkvlrm.stockservice.domain.stock.Order;
 import com.skfkfkvlrm.stockservice.domain.stock.OrderStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -36,8 +37,12 @@ public class DynamicNewsService {
     private final SimpMessagingTemplate messagingTemplate;
     private final RestTemplate restTemplate = new RestTemplate();
 
-    private final String OLLAMA_URL = "http://localhost:11434/api/generate";
-    private final String MODEL_NAME = "qwen2.5-coder:7b";
+    @Value("${ollama.url:http://localhost:11434/api/generate}")
+    private String ollamaUrl;
+
+    @Value("${ollama.model:qwen2.5-coder:7b}")
+    private String modelName;
+
     private final Random random = new Random();
 
     private final String[] POSITIVE_NEWS_TEMPLATES = {
@@ -126,12 +131,12 @@ public class DynamicNewsService {
             headers.setContentType(MediaType.APPLICATION_JSON);
 
             Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("model", MODEL_NAME);
+            requestBody.put("model", modelName);
             requestBody.put("prompt", prompt);
             requestBody.put("stream", false);
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
-            ResponseEntity<Map> response = restTemplate.postForEntity(OLLAMA_URL, request, Map.class);
+            ResponseEntity<Map> response = restTemplate.postForEntity(ollamaUrl, request, Map.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 String resText = (String) response.getBody().get("response");

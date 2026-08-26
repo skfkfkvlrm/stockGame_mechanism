@@ -5,6 +5,7 @@ import com.skfkfkvlrm.adminservice.client.PointClient;
 import com.skfkfkvlrm.adminservice.client.StockClient;
 import com.skfkfkvlrm.adminservice.domain.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -13,6 +14,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
+@PreAuthorize("hasRole('ROLE_ADMIN')")
 @RequiredArgsConstructor
 public class AdminController {
 
