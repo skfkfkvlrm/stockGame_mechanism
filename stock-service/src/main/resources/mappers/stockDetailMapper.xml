@@ -54,15 +54,15 @@
 		VALUES (#{content}, #{price}, #{amount}, #{state}, NOW(), COALESCE((SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1), #{studentId}), #{stockId})
 	</insert>
 	<select id="getTotalOrder" parameterType="int" resultType="com.skfkfkvlrm.stockservice.domain.stock.Order">
-		SELECT price, amount, content FROM orders 
+		SELECT order_id, student_id, stock_id, price, amount, content, state, created_date FROM orders 
 		WHERE stock_id = #{stockId} AND state IN ('대기', 'WAITING') ORDER BY created_date ASC
 	</select>
 	<select id="getTotalSellOrder" parameterType="int" resultType="com.skfkfkvlrm.stockservice.domain.stock.Order">
-		SELECT price, amount, content FROM orders 
+		SELECT order_id, student_id, stock_id, price, amount, content, state, created_date FROM orders 
 		WHERE stock_id = #{stockId} AND state IN ('대기', 'WAITING') AND content IN ('매도', 'SELL') ORDER BY created_date ASC
 	</select>
 	<select id="getTotalBuyOrder" parameterType="int" resultType="com.skfkfkvlrm.stockservice.domain.stock.Order">
-		SELECT price, amount, content FROM orders 
+		SELECT order_id, student_id, stock_id, price, amount, content, state, created_date FROM orders 
 		WHERE stock_id = #{stockId} AND state IN ('대기', 'WAITING') AND content IN ('매수', 'BUY') ORDER BY created_date ASC
 	</select>
 	<select id="getTotalMyOrder" resultType="com.skfkfkvlrm.stockservice.domain.stock.Order">

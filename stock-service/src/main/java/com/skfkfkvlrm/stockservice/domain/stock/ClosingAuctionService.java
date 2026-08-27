@@ -126,7 +126,7 @@ public class ClosingAuctionService {
             Order b = eligibleBuys.get(buyIdx);
             Order s = eligibleSells.get(sellIdx);
 
-            if (b.getStudentId().equals(s.getStudentId())) {
+            if (b.getStudentId() != null && s.getStudentId() != null && b.getStudentId().equals(s.getStudentId())) {
                 // 자전거래 방지
                 sellIdx++;
                 continue;
