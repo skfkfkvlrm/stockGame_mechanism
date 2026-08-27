@@ -33,6 +33,10 @@ public class MarketSettings {
     @Builder.Default
     private String closeTime = "15:30";
 
+    @Column(name = "call_auction_start_time")
+    @Builder.Default
+    private String callAuctionStartTime = "15:20";
+
     @Column(name = "operating_days")
     @Builder.Default
     private String operatingDays = "MON,TUE,WED,THU,FRI";
@@ -79,11 +83,15 @@ public class MarketSettings {
         try {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
             LocalTime open = LocalTime.parse(this.openTime != null ? this.openTime : "09:00", formatter);
+            LocalTime auctionStart = LocalTime.parse(this.callAuctionStartTime != null ? this.callAuctionStartTime : "15:20", formatter);
             LocalTime close = LocalTime.parse(this.closeTime != null ? this.closeTime : "15:30", formatter);
             LocalTime now = LocalTime.now();
 
             if (now.isBefore(open) || now.isAfter(close)) {
                 return "CLOSED";
+            }
+            if (!now.isBefore(auctionStart) && !now.isAfter(close)) {
+                return "CALL_AUCTION";
             }
             return "OPEN";
         } catch (Exception e) {

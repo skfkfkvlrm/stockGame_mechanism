@@ -91,8 +91,24 @@ public class StockOrderServiceImpl implements StockOrderService {
         if (currentPoints < totalOrderPrice) {
             throw new com.skfkfkvlrm.stockservice.exception.StockGameException(com.skfkfkvlrm.stockservice.exception.ErrorCode.INSUFFICIENT_POINT);
         }
-        // 2. 오더북(Order Book) 기반 지정가 매칭 (LP 매도 주문 및 타 학생 매도 주문 포함)
-        // 매수 시 대기 중인 매도(SELL) 주문 조회 (가격 오름차순, 시간 오름차순)
+        // 시장 상태 조회
+        MarketSettings settings = marketSettingsRepository.findById(1).orElse(null);
+        boolean isCallAuction = settings != null && "CALL_AUCTION".equalsIgnoreCase(settings.calculateStatusCode());
+
+        // 2. 동시호가 기간(CALL_AUCTION)인 경우 즉시 체결하지 않고 대기(WAITING)로만 적재
+        if (isCallAuction) {
+            Order order = Order.builder()
+                    .content(OrderStatus.BUY).state(OrderStatus.WAITING)
+                    .price(request.getPrice()).amount(request.getAmount())
+                    .studentId(request.getStudentId()).stockId(request.getStockId()).build();
+            stockDetailRepository.insertOrder(order);
+            stockDetailRepository.setStudentPointDown(totalOrderPrice, request.getStudentId());
+
+            broadcastOrderUpdate(request.getStockId());
+            return "장 마감 동시호가 매수 주문이 접수되었습니다. (15:30에 일괄 체결됩니다)";
+        }
+
+        // 3. 정규장 연속매매: 오더북(Order Book) 기반 지정가 매칭
         List<Order> sellOrders = stockDetailRepository.getMatchOrderList(
                 request.getStockId(), OrderStatus.SELL.name(), request.getPrice(), request.getStudentId());
 
@@ -182,16 +198,30 @@ public class StockOrderServiceImpl implements StockOrderService {
         }
 
         Map<String, Object> pubInfo = stockDetailRepository.getStockPubInfo(request.getStockId());
-        // 발행 잔량(pubAmount)이 남아 있어도 매도(예약)는 가능하도록 방어 로직 제거
         
         // 1. 보유 주식 수량 검증
         int stockAmount = stockDetailRepository.getStudentStockAmount(request.getStockId(), request.getStudentId());
         if (request.getAmount() > stockAmount) {
             throw new com.skfkfkvlrm.stockservice.exception.StockGameException(com.skfkfkvlrm.stockservice.exception.ErrorCode.INSUFFICIENT_STOCK);
         }
-        int totalOrderPrice = request.getPrice() * request.getAmount();
-        // 2. 학생 간 거래 (부분 체결 로직)
-        // 매도 시 "BUY" 대기열을 조회
+
+        // 시장 상태 조회
+        MarketSettings settings = marketSettingsRepository.findById(1).orElse(null);
+        boolean isCallAuction = settings != null && "CALL_AUCTION".equalsIgnoreCase(settings.calculateStatusCode());
+
+        // 2. 동시호가 기간(CALL_AUCTION)인 경우 즉시 체결하지 않고 대기(WAITING)로만 적재
+        if (isCallAuction) {
+            Order order = Order.builder()
+                    .content(OrderStatus.SELL).state(OrderStatus.WAITING)
+                    .price(request.getPrice()).amount(request.getAmount())
+                    .studentId(request.getStudentId()).stockId(request.getStockId()).build();
+            stockDetailRepository.insertOrder(order);
+
+            broadcastOrderUpdate(request.getStockId());
+            return "장 마감 동시호가 매도 주문이 접수되었습니다. (15:30에 일괄 체결됩니다)";
+        }
+
+        // 3. 정규장 연속매매: 학생 간 거래 (부분 체결 로직)
         List<Order> buyOrders = stockDetailRepository.getMatchOrderList(
                 request.getStockId(), OrderStatus.BUY.name(), request.getPrice(), request.getStudentId());
 
@@ -235,7 +265,7 @@ public class StockOrderServiceImpl implements StockOrderService {
 
         int remainingAmount = matchResult.getRemainingAmount();
 
-        // 3. 남은 수량이 있으면 대기 등록
+        // 4. 남은 수량이 있으면 대기 등록
         if (remainingAmount > 0) {
             Order order = Order.builder()
                     .content(OrderStatus.SELL).state(OrderStatus.WAITING)

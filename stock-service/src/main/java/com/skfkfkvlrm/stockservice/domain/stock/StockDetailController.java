@@ -22,6 +22,7 @@ public class StockDetailController {
     private final StockPriceHistoryRepository stockPriceHistoryRepository;
     private final StockListRepository stockListRepository;
     private final com.skfkfkvlrm.stockservice.domain.admin.MarketSettingsRepository marketSettingsRepository;
+    private final ClosingAuctionService closingAuctionService;
 
     @GetMapping("")
     public ApiResponse<List<StockDetailResponse>> getStockList() {
@@ -128,6 +129,7 @@ public class StockDetailController {
             data.put("mode", "AUTO");
             data.put("openTime", "09:00");
             data.put("closeTime", "15:30");
+            data.put("callAuctionStartTime", "15:20");
             data.put("statusCode", "OPEN");
         } else {
             boolean isOpen = settings.calculateIsMarketOpen();
@@ -136,6 +138,7 @@ public class StockDetailController {
             data.put("mode", settings.getMode());
             data.put("openTime", settings.getOpenTime());
             data.put("closeTime", settings.getCloseTime());
+            data.put("callAuctionStartTime", settings.getCallAuctionStartTime());
             data.put("operatingDays", settings.getOperatingDays());
             data.put("statusCode", status);
         }
@@ -152,6 +155,7 @@ public class StockDetailController {
                     .mode("MANUAL")
                     .openTime("09:00")
                     .closeTime("15:30")
+                    .callAuctionStartTime("15:20")
                     .statusCode("MANUAL_PAUSE")
                     .build();
         } else {
@@ -166,6 +170,7 @@ public class StockDetailController {
         data.put("mode", settings.getMode());
         data.put("openTime", settings.getOpenTime());
         data.put("closeTime", settings.getCloseTime());
+        data.put("callAuctionStartTime", settings.getCallAuctionStartTime());
         data.put("statusCode", settings.getStatusCode());
         return ApiResponse.success("Market status toggled", data);
     }
@@ -179,6 +184,7 @@ public class StockDetailController {
         if (body.containsKey("mode")) settings.setMode(String.valueOf(body.get("mode")));
         if (body.containsKey("openTime")) settings.setOpenTime(String.valueOf(body.get("openTime")));
         if (body.containsKey("closeTime")) settings.setCloseTime(String.valueOf(body.get("closeTime")));
+        if (body.containsKey("callAuctionStartTime")) settings.setCallAuctionStartTime(String.valueOf(body.get("callAuctionStartTime")));
         if (body.containsKey("marketOpen")) settings.setMarketOpen(Boolean.parseBoolean(String.valueOf(body.get("marketOpen"))));
 
         settings.setStatusCode(settings.calculateStatusCode());
@@ -189,7 +195,14 @@ public class StockDetailController {
         data.put("mode", settings.getMode());
         data.put("openTime", settings.getOpenTime());
         data.put("closeTime", settings.getCloseTime());
+        data.put("callAuctionStartTime", settings.getCallAuctionStartTime());
         data.put("statusCode", settings.calculateStatusCode());
         return ApiResponse.success("Market settings updated", data);
+    }
+
+    @PostMapping("/admin/market/execute-closing-auction")
+    public ApiResponse<Map<String, Object>> executeClosingAuctionManually() {
+        Map<String, Object> result = closingAuctionService.executeClosingAuctionForAllStocks();
+        return ApiResponse.success("장 마감 동시호가 단일가 일괄 체결이 실행되었습니다.", result);
     }
 }
