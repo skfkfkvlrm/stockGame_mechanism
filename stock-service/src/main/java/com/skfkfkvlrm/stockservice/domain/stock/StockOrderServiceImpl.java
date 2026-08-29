@@ -80,8 +80,8 @@ public class StockOrderServiceImpl implements StockOrderService {
         Integer pointsObj = stockDetailRepository.getStudentPoint(request.getStudentId());
         int currentPoints;
         if (pointsObj == null) {
-            if ("admin".equals(request.getStudentId())) {
-                currentPoints = 99999999;
+            if ("admin".equals(request.getStudentId()) || "SYSTEM_LP".equals(request.getStudentId())) {
+                currentPoints = Integer.MAX_VALUE;
             } else {
                 throw new com.skfkfkvlrm.stockservice.exception.StockGameException(com.skfkfkvlrm.stockservice.exception.ErrorCode.USER_NOT_FOUND);
             }
