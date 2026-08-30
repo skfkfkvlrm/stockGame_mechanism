@@ -44,7 +44,7 @@
     <update id="updateStudentPoint">
         UPDATE students 
         SET total_point = total_point + #{amount}
-        WHERE student_id = #{studentId}
+        WHERE student_id = #{studentId} OR CAST(id AS CHAR) = #{studentId}
     </update>
 
     <!-- 관리자 포인트 변동 이력 저장 (get_points 테이블) -->

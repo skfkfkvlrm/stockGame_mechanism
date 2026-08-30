@@ -11,7 +11,7 @@
 
 	<!-- 나의 가용포인트 조회 -->
 	<select id="getStudentPoint" parameterType="String" resultType="java.lang.Integer">
-		SELECT total_point FROM students WHERE student_id = #{studentId} LIMIT 1
+		SELECT total_point FROM students WHERE (student_id = #{studentId} OR CAST(id AS CHAR) = #{studentId}) LIMIT 1
 	</select>
 
 	<!-- 쿠폰 구매 (쿠폰구매내역 추가) -->
@@ -22,7 +22,7 @@
 			(SELECT name FROM coupons WHERE coupon_id = #{couponId}),
 			'사용전',
 			NOW(),
-			(SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1),
+			COALESCE((SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1), CAST(#{studentId} AS UNSIGNED)),
 			#{couponId}
 		)
 	</insert>
@@ -38,7 +38,9 @@
 		SELECT cp.coupon_purchase_id AS couponPurchaseId, cp.name, cp.price, cp.state, cp.created_date as createdDate
 		FROM coupon_purchase cp 
 		INNER JOIN coupons c ON cp.coupon_id = c.coupon_id
-		WHERE (cp.student_id = #{studentId} OR cp.student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1))
+		WHERE (CAST(cp.student_id AS CHAR) = #{studentId} 
+		       OR cp.student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
+		       OR cp.student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1))
 		ORDER BY cp.created_date DESC
 	</select>
 
@@ -47,13 +49,18 @@
 		UPDATE coupon_purchase
 		SET state = '사용'
 		WHERE coupon_purchase_id = #{couponPurchaseId}
-		  AND (student_id = #{studentId} OR student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1))
+		  AND (CAST(student_id AS CHAR) = #{studentId} 
+		       OR student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
+		       OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1))
 		  AND state = '사용전'
 	</update>
 
 	<!-- 내가 구매한 쿠폰 수량 -->
 	<select id="getMyCouponCount" parameterType="String" resultType="int">
-		SELECT COUNT(coupon_id) FROM coupon_purchase WHERE (student_id = #{studentId} OR student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1))
+		SELECT COUNT(coupon_id) FROM coupon_purchase 
+		WHERE (CAST(student_id AS CHAR) = #{studentId} 
+		       OR student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
+		       OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1))
 	</select>
 
 	<!-- 당해 연도 최대 쿠폰 일련번호 조회 (예: CPN-2026-0004) -->

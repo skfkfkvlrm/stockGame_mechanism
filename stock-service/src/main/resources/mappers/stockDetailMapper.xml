@@ -41,13 +41,15 @@
 	<select id="getStudentStockAmount" resultType="int">
 		SELECT COALESCE(SUM(CASE WHEN content IN ('매수', 'BUY') THEN amount ELSE -amount END), 0) AS amount
 		FROM orders 
-		WHERE (student_id = #{studentId} OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1)) 
+		WHERE (student_id = #{studentId} 
+		       OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1)
+		       OR student_id = (SELECT student_id FROM students WHERE CAST(id AS CHAR) = #{studentId} LIMIT 1)) 
 		  AND stock_id = #{stockId} 
 		  AND state IN ('체결', 'MATCHED')
 		FOR UPDATE
 	</select>
 	<select id="getStudentPoint" parameterType="String" resultType="java.lang.Integer">
-		SELECT COALESCE(total_point, 0) FROM students WHERE (student_id = #{studentId} OR id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)) LIMIT 1 FOR UPDATE
+		SELECT COALESCE(total_point, 0) FROM students WHERE (student_id = #{studentId} OR CAST(id AS CHAR) = #{studentId}) LIMIT 1 FOR UPDATE
 	</select>
 	<insert id="setOrderRequest">
 		INSERT INTO orders (content, price, amount, state, created_date, student_id, stock_id)
@@ -67,14 +69,16 @@
 	</select>
 	<select id="getTotalMyOrder" resultType="com.skfkfkvlrm.stockservice.domain.stock.Order">
 		SELECT order_id, content, price, amount, created_date, state FROM orders
-		WHERE (student_id = #{studentId} OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1)) 
+		WHERE (student_id = #{studentId} 
+		       OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1)
+		       OR student_id = (SELECT student_id FROM students WHERE CAST(id AS CHAR) = #{studentId} LIMIT 1)) 
 		  AND stock_id = #{stockId} AND state IN ('대기', 'WAITING') ORDER BY created_date ASC
 	</select>
 	<update id="setStudentPointUp">
-		UPDATE students SET total_point = total_point + #{totalPrice} WHERE (student_id = #{studentId} OR id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1))
+		UPDATE students SET total_point = total_point + #{totalPrice} WHERE (student_id = #{studentId} OR CAST(id AS CHAR) = #{studentId})
 	</update>
 	<update id="setStudentPointDown">
-		UPDATE students SET total_point = total_point - #{totalPrice} WHERE (student_id = #{studentId} OR id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1))
+		UPDATE students SET total_point = total_point - #{totalPrice} WHERE (student_id = #{studentId} OR CAST(id AS CHAR) = #{studentId})
 	</update>
 	<insert id="setMatchedOrder">
 		INSERT INTO stock_transactions (created_date, buy_order_id, sell_order_id, amount, price)
@@ -106,8 +110,12 @@
 	</select>
 	<select id="getMyOrderNo" resultType="int">
 		SELECT order_id FROM orders
-		WHERE content = #{content} AND (student_id = #{studentId} OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1)) AND stock_id = #{stockId}
-		AND state = #{state} AND amount = #{amount} AND price = #{price} ORDER BY created_date DESC LIMIT 1
+		WHERE content = #{content} 
+		  AND (student_id = #{studentId} 
+		       OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1)
+		       OR student_id = (SELECT student_id FROM students WHERE CAST(id AS CHAR) = #{studentId} LIMIT 1)) 
+		  AND stock_id = #{stockId}
+		  AND state = #{state} AND amount = #{amount} AND price = #{price} ORDER BY created_date DESC LIMIT 1
 	</select>
 	<insert id="insertOrder" parameterType="com.skfkfkvlrm.stockservice.domain.stock.Order"
 	        useGeneratedKeys="true" keyProperty="orderId" keyColumn="order_id">

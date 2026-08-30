@@ -5,53 +5,57 @@
     <select id="getStudentAssetInfo" resultType="Map">
         SELECT total_point, total_coupon
         FROM students
-        WHERE (student_id = #{studentId} OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1))
+        WHERE (student_id = #{studentId} OR CAST(id AS CHAR) = #{studentId})
         LIMIT 1
     </select>
 
     <select id="getStudentPoint" resultType="java.lang.Integer">
         SELECT total_point
         FROM students
-        WHERE (student_id = #{studentId} OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1))
+        WHERE (student_id = #{studentId} OR CAST(id AS CHAR) = #{studentId})
         LIMIT 1
     </select>
 
     <update id="setStudentPointDown">
         UPDATE students
         SET total_point = total_point - #{amount}
-        WHERE (student_id = #{studentId} OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1))
+        WHERE (student_id = #{studentId} OR CAST(id AS CHAR) = #{studentId})
     </update>
 
     <update id="setStudentPointUp">
         UPDATE students
         SET total_point = total_point + #{amount}
-        WHERE (student_id = #{studentId} OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1))
+        WHERE (student_id = #{studentId} OR CAST(id AS CHAR) = #{studentId})
     </update>
 
     <select id="getPointValue" resultType="java.lang.Integer">
         SELECT COALESCE(total_point, 0)
         FROM students
-        WHERE (student_id = #{studentId} OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1))
+        WHERE (student_id = #{studentId} OR CAST(id AS CHAR) = #{studentId})
         LIMIT 1
     </select>
 
     <select id="getTotalCoupon" resultType="java.lang.Integer">
         SELECT COALESCE(COUNT(*), 0)
         FROM coupon_purchase
-        WHERE (student_id = #{studentId} OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1))
+        WHERE (student_id = #{studentId} OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1) OR student_id = (SELECT student_id FROM students WHERE CAST(id AS CHAR) = #{studentId} LIMIT 1))
     </select>
 
     <select id="getMyStockNos" resultType="java.lang.Integer">
         SELECT DISTINCT stock_id
         FROM orders
-        WHERE (student_id = #{studentId} OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1))
+        WHERE (student_id = #{studentId} 
+               OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1)
+               OR student_id = (SELECT student_id FROM students WHERE CAST(id AS CHAR) = #{studentId} LIMIT 1))
           AND state IN ('체결', 'MATCHED')
     </select>
 
     <select id="getStockAmount" resultType="int">
         SELECT COALESCE(SUM(CASE WHEN content IN ('매수', 'BUY') THEN amount ELSE -amount END), 0)
         FROM orders
-        WHERE (student_id = #{studentId} OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1))
+        WHERE (student_id = #{studentId} 
+               OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1)
+               OR student_id = (SELECT student_id FROM students WHERE CAST(id AS CHAR) = #{studentId} LIMIT 1))
           AND stock_id = #{stockId}
           AND state IN ('체결', 'MATCHED')
     </select>
@@ -72,7 +76,9 @@
             ROUND(SUM(CASE WHEN content IN ('매수', 'BUY') THEN price * amount ELSE 0 END) / 
             NULLIF(SUM(CASE WHEN content IN ('매수', 'BUY') THEN amount ELSE 0 END), 0)), 0)
         FROM orders
-        WHERE (student_id = #{studentId} OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1))
+        WHERE (student_id = #{studentId} 
+               OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1)
+               OR student_id = (SELECT student_id FROM students WHERE CAST(id AS CHAR) = #{studentId} LIMIT 1))
           AND stock_id = #{stockId}
           AND state IN ('체결', 'MATCHED')
     </select>
@@ -87,7 +93,9 @@
             0
         )
         FROM orders o
-        WHERE (o.student_id = #{studentId} OR o.student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1))
+        WHERE (o.student_id = #{studentId} 
+               OR o.student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1)
+               OR o.student_id = (SELECT student_id FROM students WHERE CAST(id AS CHAR) = #{studentId} LIMIT 1))
           AND o.stock_id = #{stockId}
           AND o.state IN ('체결', 'MATCHED')
         GROUP BY o.stock_id
@@ -111,7 +119,9 @@
             0
         ) AS profit
         FROM orders o
-        WHERE (o.student_id = #{studentId} OR o.student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1))
+        WHERE (o.student_id = #{studentId} 
+               OR o.student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1)
+               OR o.student_id = (SELECT student_id FROM students WHERE CAST(id AS CHAR) = #{studentId} LIMIT 1))
           AND o.stock_id = #{stockId}
           AND o.state IN ('체결', 'MATCHED')
         GROUP BY o.stock_id
@@ -137,7 +147,9 @@
                     (SELECT s.publication_price FROM stocks s WHERE s.stock_id = o.stock_id)
                 ) AS current_price
             FROM orders o
-            WHERE (o.student_id = #{studentId} OR o.student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1))
+            WHERE (o.student_id = #{studentId} 
+                   OR o.student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1)
+                   OR o.student_id = (SELECT student_id FROM students WHERE CAST(id AS CHAR) = #{studentId} LIMIT 1))
               AND o.state IN ('체결', 'MATCHED')
             GROUP BY o.stock_id
             HAVING SUM(CASE WHEN o.content IN ('매수', 'BUY') THEN o.amount ELSE -o.amount END) > 0
