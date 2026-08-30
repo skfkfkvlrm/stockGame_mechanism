@@ -20,7 +20,7 @@ public class StockPriceServiceImpl implements StockPriceService {
 
     @Override
     public List<StockPriceResponse> getStockPriceList() {
-        // 1. ?泥?二쇱 醫紐?由ъㅽ?議고
+        // 1. 전체 주식 종목 리스트 조회
         List<Stock> stockList = stockListRepository.getStockNameList();
         List<StockPriceResponse> stockPriceList = new ArrayList<>();
 
@@ -28,18 +28,19 @@ public class StockPriceServiceImpl implements StockPriceService {
             int stockId = stock.getStockId();
             String stockName = stock.getName();
 
-            // 2. ?대?醫紐⑹ 諛? ?蹂??????, 諛?媛)
+            // 2. 해당 종목의 발행 정보 (잔여 수량, 발행가)
             Map<String, Object> pubInfo = stockDetailRepository.getStockPubInfo(stockId);
             int pubAmount = getIntOrDefault(pubInfo, "pubAmount");
             int pubPrice = getIntOrDefault(pubInfo, "pubPrice");
 
-            // 3. 諛? ?????⑥??쇰㈃ ??ш?瑜?珥湲?諛?媛濡 怨?
-            int currentPrice = pubAmount > 0 ? pubPrice : stockDetailRepository.getStockPrice(stockId);
+            // 3. 현재가 조회 (최근 체결가 또는 발행가)
+            int currentPrice = stockDetailRepository.getStockPrice(stockId);
+            if (currentPrice == 0) currentPrice = pubPrice;
 
-            // 4. ?댁 媛寃?議고
+            // 4. 전일 종가 조회
             int prevPrice = stockDetailRepository.getPervPrice(stockId);
 
-            // 5. ????鍮 蹂???諛 ?깅쎈?
+            // 5. 전일 대비 변동액 및 등락률 계산
             int priceChange = currentPrice - prevPrice;
             double changeRate = 0.0;
             if (prevPrice != 0) {
@@ -47,7 +48,7 @@ public class StockPriceServiceImpl implements StockPriceService {
                 changeRate = Math.round(changeRate * 100.0) / 100.0;
             }
 
-            // 6. StockPriceResponse? ???
+            // 6. StockPriceResponse 생성 및 추가
             stockPriceList.add(StockPriceResponse.builder()
                     .stockId(stockId)
                     .stockName(stockName)

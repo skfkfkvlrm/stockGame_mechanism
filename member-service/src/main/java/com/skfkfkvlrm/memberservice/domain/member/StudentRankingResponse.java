@@ -12,6 +12,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class StudentRankingResponse {
+    private Integer id;
     private int rank;
     private String studentId;
     private String name;

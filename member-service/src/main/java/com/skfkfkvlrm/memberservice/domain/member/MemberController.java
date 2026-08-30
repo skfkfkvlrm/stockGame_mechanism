@@ -64,11 +64,17 @@ public class MemberController {
     }
 
     @PostMapping("/admin/students/{studentId}/point")
+    @org.springframework.transaction.annotation.Transactional
     public ApiResponse<Boolean> adjustStudentPoint(
             @PathVariable("studentId") String studentId,
             @RequestBody java.util.Map<String, Object> body) {
         int amount = body.get("amount") != null ? ((Number) body.get("amount")).intValue() : 0;
+        String reason = (String) body.getOrDefault("reason", "");
+        if (reason == null || reason.isBlank()) {
+            reason = amount >= 0 ? "관리자 수동 포인트 지급" : "관리자 수동 포인트 차감";
+        }
         memberRepository.updateStudentPoint(amount, studentId);
+        memberRepository.insertGetPoint(studentId, amount, reason);
         return ApiResponse.success("학생 포인트가 성공적으로 반영되었습니다.", true);
     }
 

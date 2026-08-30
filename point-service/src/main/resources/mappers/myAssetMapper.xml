@@ -78,31 +78,35 @@
     </select>
 
     <select id="getPurchasePrice" resultType="int">
-        SELECT COALESCE(SUM(CASE WHEN content IN ('매수', 'BUY') THEN price * amount ELSE 0 END), 0)
-        FROM orders
-        WHERE (student_id = #{studentId} OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1))
-          AND stock_id = #{stockId}
-          AND state IN ('체결', 'MATCHED')
+        SELECT COALESCE(
+            ROUND(
+                SUM(CASE WHEN o.content IN ('매수', 'BUY') THEN o.amount ELSE -o.amount END) *
+                (SUM(CASE WHEN o.content IN ('매수', 'BUY') THEN o.price * o.amount ELSE 0 END) / 
+                 NULLIF(SUM(CASE WHEN o.content IN ('매수', 'BUY') THEN o.amount ELSE 0 END), 0))
+            ),
+            0
+        )
+        FROM orders o
+        WHERE (o.student_id = #{studentId} OR o.student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1))
+          AND o.stock_id = #{stockId}
+          AND o.state IN ('체결', 'MATCHED')
+        GROUP BY o.stock_id
+        HAVING SUM(CASE WHEN o.content IN ('매수', 'BUY') THEN o.amount ELSE -o.amount END) > 0
     </select>
 
     <select id="getStockProfit" resultType="int">
         SELECT COALESCE(
-            (
+            ROUND(
+                SUM(CASE WHEN o.content IN ('매수', 'BUY') THEN o.amount ELSE -o.amount END) *
                 (
-                    SUM(CASE WHEN content IN ('매수', 'BUY') THEN amount ELSE -amount END)
-                    *
-                    (
-                        SELECT COALESCE(
-                            (
-                                SELECT price FROM orders WHERE stock_id = #{stockId} AND state IN ('체결', 'MATCHED') ORDER BY created_date DESC LIMIT 1
-                            ),
-                            st.publication_price
-                        )
-                        FROM stocks st WHERE st.stock_id = o.stock_id
-                    )
+                    (SELECT COALESCE(
+                        (SELECT t.price FROM stock_transactions t JOIN orders ord ON t.buy_order_id = ord.order_id WHERE ord.stock_id = o.stock_id ORDER BY t.created_date DESC LIMIT 1),
+                        (SELECT s.publication_price FROM stocks s WHERE s.stock_id = o.stock_id)
+                    ))
+                    -
+                    (SUM(CASE WHEN o.content IN ('매수', 'BUY') THEN o.price * o.amount ELSE 0 END) / 
+                     NULLIF(SUM(CASE WHEN o.content IN ('매수', 'BUY') THEN o.amount ELSE 0 END), 0))
                 )
-                -
-                SUM(CASE WHEN content IN ('매수', 'BUY') THEN price * amount ELSE 0 END)
             ),
             0
         ) AS profit
@@ -110,7 +114,8 @@
         WHERE (o.student_id = #{studentId} OR o.student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1))
           AND o.stock_id = #{stockId}
           AND o.state IN ('체결', 'MATCHED')
-        GROUP BY stock_id
+        GROUP BY o.stock_id
+        HAVING SUM(CASE WHEN o.content IN ('매수', 'BUY') THEN o.amount ELSE -o.amount END) > 0
     </select>
 
     <select id="getMyStockAssetList" resultType="com.skfkfkvlrm.pointservice.domain.common.StockInfoResponse">
@@ -119,13 +124,12 @@
             sub.amount AS amount,
             sub.current_price AS currentPrice,
             sub.avg_price AS averagePrice,
-            sub.purchase_price AS purchasePrice,
-            ((sub.amount * sub.current_price) - sub.purchase_price) AS profit
+            CAST(ROUND(sub.amount * sub.avg_price) AS SIGNED) AS purchasePrice,
+            CAST(ROUND((sub.amount * sub.current_price) - (sub.amount * sub.avg_price)) AS SIGNED) AS profit
         FROM (
             SELECT 
                 o.stock_id,
                 SUM(CASE WHEN o.content IN ('매수', 'BUY') THEN o.amount ELSE -o.amount END) AS amount,
-                SUM(CASE WHEN o.content IN ('매수', 'BUY') THEN o.price * o.amount ELSE 0 END) AS purchase_price,
                 ROUND(SUM(CASE WHEN o.content IN ('매수', 'BUY') THEN o.price * o.amount ELSE 0 END) / 
                       NULLIF(SUM(CASE WHEN o.content IN ('매수', 'BUY') THEN o.amount ELSE 0 END), 0)) AS avg_price,
                 COALESCE(

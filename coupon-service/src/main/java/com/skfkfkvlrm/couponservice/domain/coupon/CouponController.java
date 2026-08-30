@@ -95,8 +95,24 @@ public class CouponController {
         String name = (String) body.get("name");
         int price = body.get("price") != null ? ((Number) body.get("price")).intValue() : 0;
         String status = (String) body.getOrDefault("status", "ON_SALE");
-        couponRepository.insertCoupon(name, price, status);
-        return ApiResponse.success("신규 쿠폰 상품이 등록되었습니다.", true);
+
+        // 1. 당해 연도 기반 일련번호(CPN-YYYY-XXXX) 자동 채번
+        String currentYear = String.valueOf(java.time.Year.now().getValue());
+        String maxCode = couponRepository.getMaxCouponCodeByYear(currentYear);
+
+        int nextSeq = 1;
+        if (maxCode != null && maxCode.startsWith("CPN-" + currentYear + "-")) {
+            try {
+                String seqStr = maxCode.substring(("CPN-" + currentYear + "-").length());
+                nextSeq = Integer.parseInt(seqStr) + 1;
+            } catch (Exception ignored) {
+                nextSeq = 1;
+            }
+        }
+        String couponCode = String.format("CPN-%s-%04d", currentYear, nextSeq);
+
+        couponRepository.insertCoupon(couponCode, name, price, status);
+        return ApiResponse.success("신규 쿠폰 상품이 등록되었습니다. (일련번호: " + couponCode + ")", true);
     }
 
     @PutMapping("/admin/coupons/{couponId}")

@@ -4,7 +4,9 @@
 
 	<!-- 만들어져있는 쿠폰 모두 조회 -->
 	<select id="getCouponList" resultType="com.skfkfkvlrm.couponservice.domain.coupon.Coupon">
-		SELECT coupon_id AS couponId, name, price, COALESCE(status, 'ON_SALE') AS status FROM coupons
+		SELECT coupon_id AS couponId, coupon_code AS couponCode, name, price, COALESCE(status, 'ON_SALE') AS status 
+		FROM coupons 
+		ORDER BY coupon_id ASC
 	</select>
 
 	<!-- 나의 가용포인트 조회 -->
@@ -54,10 +56,17 @@
 		SELECT COUNT(coupon_id) FROM coupon_purchase WHERE (student_id = #{studentId} OR student_id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1))
 	</select>
 
+	<!-- 당해 연도 최대 쿠폰 일련번호 조회 (예: CPN-2026-0004) -->
+	<select id="getMaxCouponCodeByYear" parameterType="String" resultType="String">
+		SELECT MAX(coupon_code) 
+		FROM coupons 
+		WHERE coupon_code LIKE CONCAT('CPN-', #{year}, '-%')
+	</select>
+
 	<!-- 관리자 쿠폰 CRUD -->
 	<insert id="insertCoupon">
-		INSERT INTO coupons (name, price, status)
-		VALUES (#{name}, #{price}, COALESCE(#{status}, 'ON_SALE'))
+		INSERT INTO coupons (coupon_code, name, price, status)
+		VALUES (#{couponCode}, #{name}, #{price}, COALESCE(#{status}, 'ON_SALE'))
 	</insert>
 
 	<update id="updateCoupon">

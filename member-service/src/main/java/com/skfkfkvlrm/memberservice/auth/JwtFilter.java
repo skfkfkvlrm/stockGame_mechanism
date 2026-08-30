@@ -32,7 +32,10 @@ public class JwtFilter extends OncePerRequestFilter {
             
             List<SimpleGrantedAuthority> authorities = new ArrayList<>();
             if (StringUtils.hasText(role)) {
-                authorities.add(new SimpleGrantedAuthority(role));
+                String grantedRole = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+                authorities.add(new SimpleGrantedAuthority(grantedRole));
+            } else if ("admin".equalsIgnoreCase(studentId)) {
+                authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
             } else {
                 authorities.add(new SimpleGrantedAuthority("ROLE_STUDENT"));
             }
@@ -41,6 +44,9 @@ public class JwtFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(authentication);
             
             request.setAttribute("studentId", studentId);
+            System.out.println("[Member JwtFilter] URI: " + request.getRequestURI() + ", studentId: " + studentId + ", authorities: " + authorities);
+        } else {
+            System.out.println("[Member JwtFilter] URI: " + request.getRequestURI() + ", Token validation failed or no token! token: " + token);
         }
 
         filterChain.doFilter(request, response);

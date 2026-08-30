@@ -90,7 +90,9 @@
 		UPDATE orders SET state = 'CANCELLED' WHERE order_id = #{orderId}
 	</update>
 	<select id="getStockPubInfo" parameterType="int" resultType="map">
-		SELECT publication_balance, publication_price FROM stocks WHERE stock_id = #{stockId} FOR UPDATE
+		SELECT publication_balance AS pubAmount, publication_price AS pubPrice,
+		       publication_balance, publication_price 
+		FROM stocks WHERE stock_id = #{stockId}
 	</select>
 	<update id="setStockPubBalance">
 		UPDATE stocks SET publication_balance = publication_balance - #{buyAmount} WHERE stock_id = #{stockId}

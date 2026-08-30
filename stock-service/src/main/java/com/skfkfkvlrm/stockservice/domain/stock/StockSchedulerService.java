@@ -16,7 +16,7 @@ public class StockSchedulerService {
     private final StockPriceHistoryRepository stockPriceHistoryRepository;
 
     /**
-     * 留ㅼ???(00:00:00)? ?ㅽ????댁?쇱 醫媛瑜?stocks ??대?? prev_price 濡 諛??⑸??
+     * 매일 자정(00:00:00)에 실행되어 전일의 종가를 stocks 테이블의 prev_price 로 반영합니다.
      */
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional

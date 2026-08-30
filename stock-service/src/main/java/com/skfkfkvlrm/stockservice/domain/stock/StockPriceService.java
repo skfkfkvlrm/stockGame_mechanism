@@ -5,6 +5,6 @@ import com.skfkfkvlrm.stockservice.domain.stock.StockPriceResponse;
 import java.util.List;
 
 public interface StockPriceService {
-    // ??ㅽ? ??λ ?泥?二쇱 醫紐⑹ ?ㅼ媛 ?????ш?, 蹂??? ?깅쎈?)
+    // 시스템에 등록된 전체 주식 종목의 실시간 시세(현재가, 변동액, 등락률) 조회
     List<StockPriceResponse> getStockPriceList();
 }

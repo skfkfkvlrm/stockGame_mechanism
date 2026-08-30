@@ -6,14 +6,14 @@ import com.skfkfkvlrm.stockservice.domain.stock.Order;
 import java.util.List;
 
 public interface StockDetailService {
-    // 二쇱 湲곕낯 ?蹂?諛 ???吏? 議고
+    // 주식 기본 정보 및 주요 지표 조회
     StockDetailResponse getStockDetailInfo(int stockId);
-    // ?깅?? 二쇰Ц ???紐⑸? 議고
+    // 등록된 실시간 주문 목록 조회
     List<Order> getLiveOrderList(int stockId, String type);
-    // ???泥 二쇰Ц 紐⑸? 議고
+    // 내 대기 주문 목록 조회
     List<Order> getwaitingOrderList(int stockId, String studentId);
-    // ?泥?二쇱 紐⑸? ???議고
+    // 전체 주식 목록 일괄 조회
     List<StockDetailResponse> getAllStocks();
-    // KOSPI / KOSDAQ ???吏? ?곗? 議고
+    // KOSPI / KOSDAQ 시장 지수 데이터 조회
     List<MarketIndexResponse> getMarketIndices();
 }

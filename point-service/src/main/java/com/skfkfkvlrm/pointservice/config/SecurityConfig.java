@@ -24,6 +24,10 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // admin 경로: 관리자 JWT(ROLE_ADMIN) 필수 — admin-service Feign Token Relay로 전파됨(PLAN-SEC-01)
+                .requestMatchers("/api/history/admin/**").hasRole("ADMIN")
+                // /api/internal/points/** : Gateway application.yaml 라우팅 미등록 원칙 (외부 비노출)
+                // coupon-service 등 서비스 간 내부 Feign 호출 전용 — Gateway에 절대 라우팅 추가 금지
                 .anyRequest().permitAll()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)

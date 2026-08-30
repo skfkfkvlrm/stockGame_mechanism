@@ -49,6 +49,9 @@ spring:
           uri: lb://AI-NEWS-SERVICE
           predicates:
             - Path=/api/ai/**
+        # [SECURITY - PLAN-SEC-02] 아래 경로는 절대 라우팅 추가 금지
+        # /api/internal/** : point-service 내부 전용 API (서비스 간 Feign 직접 호출 전용)
+        #   외부에 노출 시 포인트 무제한 조작 가능 — Gateway 라우팅 영구 제외
 
 eureka:
   client:

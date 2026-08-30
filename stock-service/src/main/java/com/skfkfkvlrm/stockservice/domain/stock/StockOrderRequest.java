@@ -11,12 +11,12 @@ import lombok.Setter;
 @Setter
 @Builder
 public class StockOrderRequest {
-    @NotNull(message = "二쇱 踰?몃 ??????")
+    @NotNull(message = "주식 번호는 필수입니다.")
     private int stockId;
     private String studentId;
-    @Min(value = 1, message = "二쇰Ц ??? 1 ?댁?댁댁??⑸??")
+    @Min(value = 1, message = "주문 수량은 1 이상이어야 합니다.")
     private int amount;
-    @Min(value = 1, message = "二쇰Ц 媛寃⑹ 1 ?댁?댁댁??⑸??")
+    @Min(value = 1, message = "주문 가격은 1 이상이어야 합니다.")
     private int price;
     private String content;
     private OrderStatus state;

@@ -7,20 +7,18 @@ import java.util.List;
 
 @Mapper
 public interface StockListRepository {
-    // ???湲곗〈 ??쇰ㅼ 理?? 洹몃濡 ?ъ⑷??ν寃 ??깊? 以????
-    // ?곕쇱 StockDetailDAOMybatis.java?? ??? 硫??瑜??ъъ⑺⑸??
-    // 1. 二쇱紐 議고
+    // 1. 주식 종목명 목록 조회
     List<Stock> getStockNameList();
 
-    // ?泥?二쇱 紐⑸? 議고 (愿由ъ??
+    // 2. 전체 주식 목록 조회 (관리자용)
     List<Stock> getAllStocks();
 
-    // 二쇱 ?洹 ?깅?
+    // 3. 주식 신규 등록 (상장)
     int insertStock(com.skfkfkvlrm.stockservice.domain.admin.StockRequest request);
 
-    // 二쇱 ?蹂???
+    // 4. 주식 정보 수정
     int updateStock(@org.apache.ibatis.annotations.Param("stockId") int stockId, @org.apache.ibatis.annotations.Param("request") com.skfkfkvlrm.stockservice.domain.admin.StockRequest request);
 
-    // 二쇱 ??/??ν吏
+    // 5. 주식 삭제 (상장 폐지)
     int deleteStock(int stockId);
 }

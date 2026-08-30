@@ -26,6 +26,7 @@
     <!-- 학생 총 포인트 랭킹 조회 -->
     <select id="getStudentRanking" resultType="com.skfkfkvlrm.memberservice.domain.member.StudentRankingResponse">
         SELECT 
+            MAX(id) AS id,
             ROW_NUMBER() OVER(ORDER BY MAX(total_point) DESC, student_id ASC) AS `rank`,
             student_id AS studentId, 
             MAX(name) AS name, 
@@ -45,6 +46,15 @@
         SET total_point = total_point + #{amount}
         WHERE student_id = #{studentId}
     </update>
+
+    <!-- 관리자 포인트 변동 이력 저장 (get_points 테이블) -->
+    <insert id="insertGetPoint">
+        INSERT INTO get_points (student_id, point, content, created_date)
+        SELECT id, #{point}, #{content}, NOW()
+        FROM students
+        WHERE student_id = #{studentId} OR id = CAST(#{studentId} AS UNSIGNED)
+        LIMIT 1
+    </insert>
 
     <!-- 학생 삭제 -->
     <delete id="deleteStudent" parameterType="String">

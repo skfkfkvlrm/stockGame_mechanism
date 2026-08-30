@@ -30,9 +30,9 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/members/login", "/api/members/join", "/api/members/id-check", "/api/members/ranking").permitAll()
-                .requestMatchers("/api/members/admin/**").hasRole("ADMIN")
-                .anyRequest().authenticated()
+                .requestMatchers("/api/members/login", "/api/members/join", "/api/members/id-check", "/api/members/ranking", "/login", "/join", "/id-check", "/ranking").permitAll()
+                .requestMatchers("/api/members/admin/**", "/admin/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_MANAGER", "ADMIN", "MANAGER")
+                .anyRequest().permitAll()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
             .formLogin(form -> form.disable())

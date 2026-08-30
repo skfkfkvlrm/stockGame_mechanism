@@ -22,7 +22,7 @@ public class StockDetailServiceImpl implements StockDetailService {
     private final StockDetailRepository stockDetailRepository;
     private final StockListRepository stockListRepository;
 
-    // 1. 二쇱 湲곕낯 ?蹂?議고
+    // 1. 주식 기본 정보 조회
     @Override
     public StockDetailResponse getStockDetailInfo(int stockId) {
         Map<String, Object> stockInfo = stockDetailRepository.getStockInfo(stockId);
@@ -30,12 +30,17 @@ public class StockDetailServiceImpl implements StockDetailService {
             throw new com.skfkfkvlrm.stockservice.exception.StockGameException(com.skfkfkvlrm.stockservice.exception.ErrorCode.STOCK_NOT_FOUND);
         }
 
-        // 2. 二쇱 諛? ?蹂?議고
+        // 2. 주식 발행 정보 조회
         Map<String, Object> stockPubInfo = stockDetailRepository.getStockPubInfo(stockId);
 
         int pubPrice = getIntOrDefault(stockPubInfo, "pubPrice");
+        if (pubPrice == 0) pubPrice = getIntOrDefault(stockPubInfo, "publication_price");
+        if (pubPrice == 0) pubPrice = getIntOrDefault(stockPubInfo, "publicationPrice");
+
         int pubAmount = getIntOrDefault(stockPubInfo, "pubAmount");
-        // 3. ?„???œ??媛€寃?議고šŒ
+        if (pubAmount == 0) pubAmount = getIntOrDefault(stockPubInfo, "publication_balance");
+        if (pubAmount == 0) pubAmount = getIntOrDefault(stockPubInfo, "publicationBalance");
+        // 3. 현재 시장 가격 조회
         int nowPrice = stockDetailRepository.getStockPrice(stockId);
         nowPrice = nowPrice == 0 ? pubPrice : nowPrice;
         // 4. 이전 날 가격 및 유저 간 거래량(발행 잔량 제외) 조회

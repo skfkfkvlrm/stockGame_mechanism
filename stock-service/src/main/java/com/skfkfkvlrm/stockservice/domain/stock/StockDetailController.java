@@ -120,7 +120,7 @@ public class StockDetailController {
         return ApiResponse.success("Stock transactions fetched", transactions);
     }
 
-    @GetMapping("/admin/market/status")
+    @GetMapping({"/market/status", "/admin/market/status"})
     public ApiResponse<Map<String, Object>> getMarketStatus() {
         com.skfkfkvlrm.stockservice.domain.admin.MarketSettings settings = marketSettingsRepository.findById(1).orElse(null);
         Map<String, Object> data = new HashMap<>();

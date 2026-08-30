@@ -12,5 +12,6 @@ public interface MemberRepository {
     int getIdCheck(@Param("studentId") String studentId);
     List<StudentRankingResponse> getStudentRanking();
     int updateStudentPoint(@Param("amount") int amount, @Param("studentId") String studentId);
+    int insertGetPoint(@Param("studentId") String studentId, @Param("point") int point, @Param("content") String content);
     int deleteStudent(@Param("studentId") String studentId);
 }

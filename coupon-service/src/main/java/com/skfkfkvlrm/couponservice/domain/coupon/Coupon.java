@@ -20,6 +20,9 @@ public class Coupon {
     @Column(name = "coupon_id")
     private Integer couponId;
 
+    @Column(name = "coupon_code", unique = true)
+    private String couponCode;
+
     private String name;
     private int price;
     private String description;

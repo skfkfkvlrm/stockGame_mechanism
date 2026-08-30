@@ -24,6 +24,8 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // admin 경로: 관리자 JWT(ROLE_ADMIN) 필수 — admin-service Feign Token Relay로 전파됨(PLAN-SEC-01)
+                .requestMatchers("/api/coupons/admin/**").hasRole("ADMIN")
                 .anyRequest().permitAll()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)

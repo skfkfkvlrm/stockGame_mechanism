@@ -9,7 +9,7 @@
                 created_date AS history_date,
                 '지급' AS history_type, 
                 '기초 회원가입 지원 포인트' AS history_content, 
-                30000 AS point_change 
+                100000 AS point_change 
             FROM students 
             WHERE student_id = #{studentId} OR id = (SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1)
             LIMIT 1)
@@ -28,7 +28,7 @@
 
             SELECT 
                 gp.created_date AS history_date,
-                '지급' AS history_type, 
+                CASE WHEN gp.point >= 0 THEN '지급' ELSE '차감' END AS history_type, 
                 gp.content AS history_content, 
                 gp.point AS point_change 
             FROM get_points gp
