@@ -187,6 +187,9 @@ public class StockDetailServiceImpl implements StockDetailService {
     public void delistStock(int stockId, int compensationPrice, String reason) {
         System.out.println("[Delisting Start] Target Stock ID: " + stockId + ", CompPrice: " + compensationPrice + ", Reason: " + reason);
 
+        Map<String, Object> stockInfo = stockDetailRepository.getStockInfo(stockId);
+        String stockName = (stockInfo != null && stockInfo.get("name") != null) ? (String) stockInfo.get("name") : ("종목 #" + stockId);
+
         // 1. Status -> DELISTED
         stockListRepository.updateStockStatusToDelisted(stockId);
 
@@ -194,8 +197,14 @@ public class StockDetailServiceImpl implements StockDetailService {
         List<Order> waitingOrders = stockDetailRepository.getWaitingOrdersByStockId(stockId);
         for(Order o : waitingOrders) {
             if ("BUY".equalsIgnoreCase(o.getContent().name()) || "매수".equals(o.getContent().name())) {
-                stockDetailRepository.setStudentPointUp(o.getPrice() * o.getAmount(), o.getStudentId());
-                System.out.println(" - Refund: " + o.getStudentId() + ", Amount: " + (o.getPrice() * o.getAmount()));
+                int refundAmount = o.getPrice() * o.getAmount();
+                stockDetailRepository.setStudentPointUp(refundAmount, o.getStudentId());
+                try {
+                    stockDetailRepository.insertGetPoint(o.getStudentId(), refundAmount, "[" + stockName + " 상장폐지] 미체결 매수 환불");
+                } catch (Exception e) {
+                    System.out.println("Failed to insert get_point for refund: " + e.getMessage());
+                }
+                System.out.println(" - Refund: " + o.getStudentId() + ", Amount: " + refundAmount);
             }
         }
         stockDetailRepository.cancelWaitingOrdersByStockId(stockId);
@@ -216,8 +225,14 @@ public class StockDetailServiceImpl implements StockDetailService {
 
             if (amount > 0) {
                 if (compensationPrice > 0) {
-                    stockDetailRepository.setStudentPointUp(amount * compensationPrice, studentId);
-                    System.out.println(" - Holding Compensation: " + studentId + ", Points: " + (amount * compensationPrice));
+                    int totalComp = amount * compensationPrice;
+                    stockDetailRepository.setStudentPointUp(totalComp, studentId);
+                    try {
+                        stockDetailRepository.insertGetPoint(studentId, totalComp, "[" + stockName + " 상장폐지] 보유주식(" + amount + "주) 청산 보상");
+                    } catch (Exception e) {
+                        System.out.println("Failed to insert get_point for compensation: " + e.getMessage());
+                    }
+                    System.out.println(" - Holding Compensation: " + studentId + ", Points: " + totalComp);
                 }
                 
                 Order forceSellOrder = Order.builder()

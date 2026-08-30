@@ -191,6 +191,11 @@
 		HAVING SUM(CASE WHEN content IN ('매수', 'BUY') THEN amount ELSE -amount END) &gt; 0
 	</select>
 
+	<insert id="insertGetPoint">
+		INSERT INTO get_points (student_id, point, content, created_date)
+		VALUES (COALESCE((SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1), CAST(#{studentId} AS UNSIGNED)), #{point}, #{content}, NOW())
+	</insert>
+
 </mapper>
 
 

@@ -61,4 +61,5 @@ public interface StockDetailRepository {
     List<Order> getWaitingOrdersByStockId(@Param("stockId") int stockId);
     List<Map<String, Object>> getHoldingsByStockId(@Param("stockId") int stockId);
     List<Map<String, Object>> getStockTransactionsByStockId(@Param("stockId") int stockId);
+    int insertGetPoint(@Param("studentId") String studentId, @Param("point") int point, @Param("content") String content);
 }
