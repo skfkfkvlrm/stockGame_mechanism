@@ -93,6 +93,27 @@ public class StockDetailServiceImpl implements StockDetailService {
         return ((Number) map.get(key)).intValue();
     }
 
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public void liquidateStudentAssets(String studentId) {
+        System.out.println("[Liquidate Start] Target Student ID: " + studentId);
+
+        // 1. 대기 중인 모든 주문 취소
+        stockDetailRepository.cancelAllWaitingOrdersByStudentId(studentId);
+
+        // 2. 보유 주식 SYSTEM_LP로 귀속(몰수)
+        stockDetailRepository.confiscateAllStocksByStudentId(studentId);
+
+        // 3. 포인트 몰수 및 이력 남기기
+        int totalPoint = stockDetailRepository.getStudentTotalPoint(studentId);
+        if (totalPoint > 0) {
+            stockDetailRepository.clearStudentTotalPoint(studentId);
+            stockDetailRepository.insertGetPoint(studentId, -totalPoint, "[계정 삭제] 보유 주식 강제 청산 및 잔여 포인트 몰수");
+        }
+
+        System.out.println("[Liquidate Complete] Target Student ID: " + studentId);
+    }
+
     /**
      * 주식 거래 호가창 실시간 주문 목록 조회
      * 

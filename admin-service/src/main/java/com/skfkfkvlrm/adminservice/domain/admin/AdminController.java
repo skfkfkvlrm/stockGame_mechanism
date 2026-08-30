@@ -136,7 +136,16 @@ public class AdminController {
 
     @DeleteMapping("/students/{studentId}")
     public ApiResponse<Boolean> deleteStudent(@PathVariable("studentId") String studentId) {
-        return memberClient.deleteStudent(studentId);
+        ApiResponse<Boolean> response = memberClient.deleteStudent(studentId);
+        if (response != null && Boolean.TRUE.equals(response.getData())) {
+            try {
+                stockClient.liquidateStudentAssets(studentId);
+            } catch (Exception e) {
+                // Ignore exception to let the deletion process complete, but log it
+                System.err.println("Failed to liquidate assets for deleted student: " + studentId);
+            }
+        }
+        return response;
     }
 
     @GetMapping("/students/{studentId}/points")

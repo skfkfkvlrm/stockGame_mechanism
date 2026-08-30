@@ -62,4 +62,10 @@ public interface StockDetailRepository {
     List<Map<String, Object>> getHoldingsByStockId(@Param("stockId") int stockId);
     List<Map<String, Object>> getStockTransactionsByStockId(@Param("stockId") int stockId);
     int insertGetPoint(@Param("studentId") String studentId, @Param("point") int point, @Param("content") String content);
+
+    // 학생 탈퇴 청산용
+    void cancelAllWaitingOrdersByStudentId(@Param("studentId") String studentId);
+    void confiscateAllStocksByStudentId(@Param("studentId") String studentId);
+    int getStudentTotalPoint(@Param("studentId") String studentId);
+    void clearStudentTotalPoint(@Param("studentId") String studentId);
 }

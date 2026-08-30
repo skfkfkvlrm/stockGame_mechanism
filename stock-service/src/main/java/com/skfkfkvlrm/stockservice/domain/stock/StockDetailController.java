@@ -116,6 +116,12 @@ public class StockDetailController {
         return ApiResponse.success("주식 종목이 상장폐지되었으며, 대기 주문 취소 및 보유 주식 청산이 완료되었습니다.", true);
     }
 
+    @PostMapping("/admin/students/{studentId}/liquidate")
+    public ApiResponse<Boolean> liquidateStudentAssets(@PathVariable("studentId") String studentId) {
+        stockDetailService.liquidateStudentAssets(studentId);
+        return ApiResponse.success("학생 계정 탈퇴에 따른 자산 및 주문 강제 청산이 완료되었습니다.", true);
+    }
+
     @GetMapping("/admin/stocks/{stockId}/transactions")
     public ApiResponse<List<Map<String, Object>>> getStockTransactionsAdmin(@PathVariable("stockId") int stockId) {
         List<Map<String, Object>> transactions = stockDetailRepository.getStockTransactionsByStockId(stockId);

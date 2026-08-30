@@ -18,4 +18,6 @@ public interface StockDetailService {
     List<MarketIndexResponse> getMarketIndices();
     // 상장폐지 청산 파이프라인
     void delistStock(int stockId, int compensationPrice, String reason);
+    // 학생 탈퇴에 따른 강제 청산
+    void liquidateStudentAssets(String studentId);
 }

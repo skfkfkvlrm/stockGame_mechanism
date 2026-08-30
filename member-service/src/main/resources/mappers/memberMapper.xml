@@ -14,7 +14,7 @@
     <select id="findByStudentId" resultType="Map">
         SELECT name, grade, class_name, class_number, total_point, password 
         FROM students 
-        WHERE student_id = #{studentId}
+        WHERE student_id = #{studentId} AND status = 'ACTIVE'
         LIMIT 1
     </select>
 
@@ -35,8 +35,9 @@
             MAX(class_number) AS classNumber, 
             MAX(total_point) AS totalPoint
         FROM students
+        WHERE status = 'ACTIVE'
         GROUP BY student_id
-        ORDER BY MAX(total_point) DESC, student_id ASC
+        ORDER BY `rank` ASC
         LIMIT 100
     </select>
 
@@ -56,9 +57,9 @@
         LIMIT 1
     </insert>
 
-    <!-- 학생 삭제 -->
-    <delete id="deleteStudent" parameterType="String">
-        DELETE FROM students WHERE student_id = #{studentId} OR id = CAST(#{studentId} AS UNSIGNED)
-    </delete>
+    <!-- 학생 삭제 (논리 삭제) -->
+    <update id="deleteStudent" parameterType="String">
+        UPDATE students SET status = 'DELETED' WHERE (student_id = #{studentId} OR id = CAST(#{studentId} AS UNSIGNED)) AND status = 'ACTIVE'
+    </update>
 
 </mapper>

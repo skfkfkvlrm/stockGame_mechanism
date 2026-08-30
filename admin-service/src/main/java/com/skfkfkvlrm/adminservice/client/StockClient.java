@@ -26,4 +26,7 @@ public interface StockClient {
 
     @GetMapping("/api/stock/admin/stocks/{stockId}/transactions")
     ApiResponse<List<Object>> getStockTransactions(@PathVariable("stockId") int stockId);
+
+    @PostMapping("/api/stock/admin/students/{studentId}/liquidate")
+    ApiResponse<Boolean> liquidateStudentAssets(@PathVariable("studentId") String studentId);
 }

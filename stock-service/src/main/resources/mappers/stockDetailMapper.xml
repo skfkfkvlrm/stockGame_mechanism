@@ -195,7 +195,30 @@
 		INSERT INTO get_points (student_id, point, content, created_date)
 		VALUES (COALESCE((SELECT id FROM students WHERE student_id = #{studentId} LIMIT 1), CAST(#{studentId} AS UNSIGNED)), #{point}, #{content}, NOW())
 	</insert>
+    <!-- 학생 탈퇴 청산용 쿼리 -->
+    <update id="cancelAllWaitingOrdersByStudentId">
+        UPDATE orders 
+        SET state = 'CANCELLED', deleted_date = NOW(), updated_date = NOW()
+        WHERE student_id = #{studentId} AND state = 'WAITING'
+    </update>
+
+    <update id="confiscateAllStocksByStudentId">
+        UPDATE orders 
+        SET student_id = 'SYSTEM_LP', updated_date = NOW()
+        WHERE student_id = #{studentId} AND state = 'MATCHED'
+    </update>
+
+    <select id="getStudentTotalPoint" resultType="int">
+        SELECT COALESCE(total_point, 0) FROM students
+        WHERE student_id = #{studentId} OR id = CAST(#{studentId} AS UNSIGNED)
+        LIMIT 1
+    </select>
+
+    <update id="clearStudentTotalPoint">
+        UPDATE students
+        SET total_point = 0
+        WHERE student_id = #{studentId} OR id = CAST(#{studentId} AS UNSIGNED)
+    </update>
 
 </mapper>
-
 
