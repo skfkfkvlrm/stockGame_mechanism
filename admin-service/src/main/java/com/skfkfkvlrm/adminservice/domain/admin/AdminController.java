@@ -111,8 +111,11 @@ public class AdminController {
     }
 
     @DeleteMapping("/stocks/{stockId}")
-    public ApiResponse<Boolean> deleteStock(@PathVariable("stockId") int stockId) {
-        return stockClient.deleteStock(stockId);
+    public ApiResponse<Boolean> deleteStock(
+            @PathVariable("stockId") int stockId,
+            @RequestParam(value = "compensationPrice", defaultValue = "0") int compensationPrice,
+            @RequestParam(value = "reason", required = false) String reason) {
+        return stockClient.deleteStock(stockId, compensationPrice, reason);
     }
 
     @GetMapping("/stocks/{stockId}/transactions")

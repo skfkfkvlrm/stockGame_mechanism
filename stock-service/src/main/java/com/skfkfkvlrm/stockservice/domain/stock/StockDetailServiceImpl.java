@@ -182,4 +182,53 @@ public class StockDetailServiceImpl implements StockDetailService {
                 .build()
         );
     }
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public void delistStock(int stockId, int compensationPrice, String reason) {
+        System.out.println("[Delisting Start] Target Stock ID: " + stockId + ", CompPrice: " + compensationPrice + ", Reason: " + reason);
+
+        // 1. Status -> DELISTED
+        stockListRepository.updateStockStatusToDelisted(stockId);
+
+        // 2. Cancel waiting orders and refund BUY
+        List<Order> waitingOrders = stockDetailRepository.getWaitingOrdersByStockId(stockId);
+        for(Order o : waitingOrders) {
+            if ("BUY".equalsIgnoreCase(o.getContent().name()) || "매수".equals(o.getContent().name())) {
+                stockDetailRepository.setStudentPointUp(o.getPrice() * o.getAmount(), o.getStudentId());
+                System.out.println(" - Refund: " + o.getStudentId() + ", Amount: " + (o.getPrice() * o.getAmount()));
+            }
+        }
+        stockDetailRepository.cancelWaitingOrdersByStockId(stockId);
+
+        // 3. Clear holdings
+        List<java.util.Map<String, Object>> holdings = stockDetailRepository.getHoldingsByStockId(stockId);
+        for(java.util.Map<String, Object> h : holdings) {
+            String studentId = (String) h.get("student_id");
+            if (studentId == null || "SYSTEM_LP".equals(studentId)) continue;
+            
+            int amount = 0;
+            if (h.get("amount") instanceof Number) {
+                amount = ((Number) h.get("amount")).intValue();
+            }
+
+            if (amount > 0) {
+                if (compensationPrice > 0) {
+                    stockDetailRepository.setStudentPointUp(amount * compensationPrice, studentId);
+                    System.out.println(" - Holding Compensation: " + studentId + ", Points: " + (amount * compensationPrice));
+                }
+                
+                Order forceSellOrder = Order.builder()
+                        .content(OrderStatus.SELL)
+                        .state(OrderStatus.MATCHED)
+                        .price(compensationPrice)
+                        .amount(amount)
+                        .studentId(studentId)
+                        .stockId(stockId)
+                        .build();
+                stockDetailRepository.insertOrder(forceSellOrder);
+            }
+        }
+        
+        System.out.println("[Delisting End] Target Stock ID: " + stockId);
+    }
 }

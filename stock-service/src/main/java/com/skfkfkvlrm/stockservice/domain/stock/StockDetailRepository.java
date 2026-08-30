@@ -58,5 +58,7 @@ public interface StockDetailRepository {
     StockOrderResponse getOrderById(int orderId);
     int insertOrder(Order order);
     int cancelWaitingOrdersByStockId(@Param("stockId") int stockId);
+    List<Order> getWaitingOrdersByStockId(@Param("stockId") int stockId);
+    List<Map<String, Object>> getHoldingsByStockId(@Param("stockId") int stockId);
     List<Map<String, Object>> getStockTransactionsByStockId(@Param("stockId") int stockId);
 }

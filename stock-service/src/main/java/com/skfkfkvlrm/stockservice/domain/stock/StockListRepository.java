@@ -19,6 +19,8 @@ public interface StockListRepository {
     // 4. 주식 정보 수정
     int updateStock(@org.apache.ibatis.annotations.Param("stockId") int stockId, @org.apache.ibatis.annotations.Param("request") com.skfkfkvlrm.stockservice.domain.admin.StockRequest request);
 
-    // 5. 주식 삭제 (상장 폐지)
+    // 5. delete stock
     int deleteStock(int stockId);
+
+    int updateStockStatusToDelisted(int stockId);
 }

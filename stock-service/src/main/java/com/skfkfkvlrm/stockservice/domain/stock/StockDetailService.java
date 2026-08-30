@@ -16,4 +16,6 @@ public interface StockDetailService {
     List<StockDetailResponse> getAllStocks();
     // KOSPI / KOSDAQ 시장 지수 데이터 조회
     List<MarketIndexResponse> getMarketIndices();
+    // 상장폐지 청산 파이프라인
+    void delistStock(int stockId, int compensationPrice, String reason);
 }

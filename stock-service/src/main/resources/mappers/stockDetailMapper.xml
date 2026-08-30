@@ -167,6 +167,22 @@
 		WHERE o_buy.stock_id = #{stockId}
 		ORDER BY t.created_date DESC, t.transaction_id DESC
 	</select>
+	<select id="getWaitingOrdersByStockId" parameterType="int" resultType="com.skfkfkvlrm.stockservice.domain.stock.Order">
+		SELECT order_id AS orderId, content, state, price, amount, student_id AS studentId, stock_id AS stockId
+		FROM orders
+		WHERE stock_id = #{stockId} AND state IN ('대기', 'WAITING')
+	</select>
+	
+	<select id="getHoldingsByStockId" parameterType="int" resultType="map">
+		SELECT 
+			student_id, 
+			SUM(CASE WHEN content IN ('매수', 'BUY') THEN amount ELSE -amount END) AS amount
+		FROM orders 
+		WHERE stock_id = #{stockId} AND state IN ('체결', 'MATCHED')
+		GROUP BY student_id
+		HAVING SUM(CASE WHEN content IN ('매수', 'BUY') THEN amount ELSE -amount END) &gt; 0
+	</select>
+
 </mapper>
 
 

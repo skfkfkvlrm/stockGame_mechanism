@@ -30,4 +30,8 @@
 	<delete id="deleteStock">
 		DELETE FROM stocks WHERE stock_id = #{stockId}
 	</delete>
+	
+	<update id="updateStockStatusToDelisted" parameterType="int">
+		UPDATE stocks SET status = 'DELISTED' WHERE stock_id = #{stockId}
+	</update>
 </mapper>
