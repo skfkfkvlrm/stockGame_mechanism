@@ -203,7 +203,10 @@ public class StockDetailServiceImpl implements StockDetailService {
         // 3. Clear holdings
         List<java.util.Map<String, Object>> holdings = stockDetailRepository.getHoldingsByStockId(stockId);
         for(java.util.Map<String, Object> h : holdings) {
-            String studentId = (String) h.get("student_id");
+            String studentId = (String) h.get("studentId");
+            if (studentId == null) {
+                studentId = (String) h.get("student_id");
+            }
             if (studentId == null || "SYSTEM_LP".equals(studentId)) continue;
             
             int amount = 0;
