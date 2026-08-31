@@ -50,6 +50,10 @@ public class StockDetailServiceImpl implements StockDetailService {
         String status = (String) stockInfo.get("status");
         if (status == null) status = "LISTED";
 
+        Integer refPrice = (Integer) stockInfo.get("refPrice");
+        String marketStatus = (String) stockInfo.get("marketStatus");
+        if (marketStatus == null) marketStatus = "CONTINUOUS";
+
         // 5. response 빌드 후 반환
         return new StockDetailResponse(
                 stockId,
@@ -60,6 +64,8 @@ public class StockDetailServiceImpl implements StockDetailService {
                 pubPrice,
                 pubAmount,
                 tradeVolume,
+                refPrice,
+                marketStatus,
                 status
         );
     }
@@ -81,6 +87,8 @@ public class StockDetailServiceImpl implements StockDetailService {
                     s.getPublicationPrice(),
                     s.getPublicationBalance(),
                     tradeVol,
+                    s.getRefPrice(),
+                    s.getMarketStatus() != null ? s.getMarketStatus() : "CONTINUOUS",
                     s.getStatus() != null ? s.getStatus() : "LISTED"
             );
         }).collect(Collectors.toList());

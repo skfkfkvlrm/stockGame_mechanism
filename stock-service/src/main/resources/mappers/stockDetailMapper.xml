@@ -2,8 +2,17 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.skfkfkvlrm.stockservice.domain.stock.StockDetailRepository">
 	<select id="getStockInfo" parameterType="int" resultType="map">
-		SELECT name, content, COALESCE(status, 'LISTED') AS status FROM stocks WHERE stock_id = #{stockId}
+		SELECT name, content, COALESCE(status, 'LISTED') AS status, ref_price AS refPrice, market_status AS marketStatus FROM stocks WHERE stock_id = #{stockId}
 	</select>
+	<select id="getStockInfoForUpdate" parameterType="int" resultType="map">
+		SELECT name, content, COALESCE(status, 'LISTED') AS status, ref_price AS refPrice, market_status AS marketStatus FROM stocks WHERE stock_id = #{stockId} FOR UPDATE
+	</select>
+	<update id="updateMarketStatus">
+		UPDATE stocks SET market_status = #{marketStatus} WHERE stock_id = #{stockId}
+	</update>
+	<update id="updateRefPrice">
+		UPDATE stocks SET ref_price = #{refPrice} WHERE stock_id = #{stockId}
+	</update>
 	<select id="getStockPrice" parameterType="int" resultType="int">
 		SELECT COALESCE(
 					   (SELECT o.price FROM stock_transactions t
@@ -37,6 +46,35 @@
 		FROM stock_transactions t
 		JOIN orders o ON t.buy_order_id = o.order_id
 		WHERE o.stock_id = #{stockId}
+	</select>
+
+	<select id="getLastTransactionTime" parameterType="int" resultType="java.time.LocalDateTime">
+		SELECT t.created_date 
+		FROM stock_transactions t
+		JOIN orders o ON t.buy_order_id = o.order_id
+		WHERE o.stock_id = #{stockId}
+		ORDER BY t.created_date DESC
+		LIMIT 1
+	</select>
+
+	<select id="getVwap" resultType="java.lang.Integer">
+		SELECT COALESCE(SUM(t.price * t.amount) / SUM(t.amount), 0)
+		FROM (
+			SELECT tr.price, tr.amount
+			FROM stock_transactions tr
+			JOIN orders o ON tr.buy_order_id = o.order_id
+			WHERE o.stock_id = #{stockId}
+			ORDER BY tr.created_date DESC
+			LIMIT #{limitCount}
+		) t
+	</select>
+
+	<select id="getHighestBuyPrice" parameterType="int" resultType="java.lang.Integer">
+		SELECT MAX(price) FROM orders WHERE stock_id = #{stockId} AND content IN ('매수', 'BUY') AND state IN ('대기', 'WAITING')
+	</select>
+
+	<select id="getLowestSellPrice" parameterType="int" resultType="java.lang.Integer">
+		SELECT MIN(price) FROM orders WHERE stock_id = #{stockId} AND content IN ('매도', 'SELL') AND state IN ('대기', 'WAITING')
 	</select>
 	<select id="getStudentStockAmount" resultType="int">
 		SELECT COALESCE(SUM(CASE WHEN content IN ('매수', 'BUY') THEN amount ELSE -amount END), 0) AS amount

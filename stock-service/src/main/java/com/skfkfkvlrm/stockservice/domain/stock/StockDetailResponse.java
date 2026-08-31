@@ -14,11 +14,13 @@ public class StockDetailResponse {
     private int pubPrice;
     private int pubAmount;
     private int tradeVolume; // 유저 간 실제 누적 체결 수량 (발행잔량 제외)
+    private Integer refPrice;
+    private String marketStatus;
     private String status; // 'LISTED' | 'SUSPENDED' | 'DELISTED'
 
     public StockDetailResponse() {}
 
-    public StockDetailResponse(int stockId, String stockName, String content, int nowPrice, int prevPrice, int pubPrice, int pubAmount, int tradeVolume, String status) {
+    public StockDetailResponse(int stockId, String stockName, String content, int nowPrice, int prevPrice, int pubPrice, int pubAmount, int tradeVolume, Integer refPrice, String marketStatus, String status) {
         this.stockId = stockId;
         this.stockName = stockName;
         this.content = content;
@@ -27,6 +29,8 @@ public class StockDetailResponse {
         this.pubPrice = pubPrice;
         this.pubAmount = pubAmount;
         this.tradeVolume = tradeVolume;
+        this.refPrice = refPrice;
+        this.marketStatus = marketStatus;
         this.status = status;
     }
 
@@ -38,5 +42,7 @@ public class StockDetailResponse {
     public int getPubPrice() { return pubPrice; }
     public int getPubAmount() { return pubAmount; }
     public int getTradeVolume() { return tradeVolume; }
+    public Integer getRefPrice() { return refPrice; }
+    public String getMarketStatus() { return marketStatus; }
     public String getStatus() { return status; }
 }

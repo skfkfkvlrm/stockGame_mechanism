@@ -25,6 +25,7 @@ public class StockOrderServiceImpl implements StockOrderService {
     private final StockPriceHistoryRepository stockPriceHistoryRepository;
     private final MarketSettingsRepository marketSettingsRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final StaticViProcessor staticViProcessor;
     private final OrderMatcher orderMatcher = new OrderMatcher();
 
     private void validateMarketOpen() {
@@ -63,7 +64,7 @@ public class StockOrderServiceImpl implements StockOrderService {
         validateMarketOpen();
         validateTickSize(request.getPrice());
 
-        Map<String, Object> stockInfo = stockDetailRepository.getStockInfo(request.getStockId());
+        Map<String, Object> stockInfo = stockDetailRepository.getStockInfoForUpdate(request.getStockId());
         if (stockInfo != null) {
             String status = (String) stockInfo.get("status");
             if (status != null && !"LISTED".equalsIgnoreCase(status)) {
@@ -91,12 +92,14 @@ public class StockOrderServiceImpl implements StockOrderService {
         if (currentPoints < totalOrderPrice) {
             throw new com.skfkfkvlrm.stockservice.exception.StockGameException(com.skfkfkvlrm.stockservice.exception.ErrorCode.INSUFFICIENT_POINT);
         }
+        
         // 시장 상태 조회
         MarketSettings settings = marketSettingsRepository.findById(1).orElse(null);
         boolean isCallAuction = settings != null && "CALL_AUCTION".equalsIgnoreCase(settings.calculateStatusCode());
+        String marketStatus = stockInfo != null ? (String) stockInfo.get("marketStatus") : "CONTINUOUS";
 
-        // 2. 동시호가 기간(CALL_AUCTION)인 경우 즉시 체결하지 않고 대기(WAITING)로만 적재
-        if (isCallAuction) {
+        // 2. 동시호가 기간(CALL_AUCTION) 또는 정적 VI(STATIC_VI)인 경우 즉시 체결하지 않고 대기(WAITING)로만 적재
+        if (isCallAuction || "STATIC_VI".equalsIgnoreCase(marketStatus)) {
             Order order = Order.builder()
                     .content(OrderStatus.BUY).state(OrderStatus.WAITING)
                     .price(request.getPrice()).amount(request.getAmount())
@@ -105,10 +108,36 @@ public class StockOrderServiceImpl implements StockOrderService {
             stockDetailRepository.setStudentPointDown(totalOrderPrice, request.getStudentId());
 
             broadcastOrderUpdate(request.getStockId());
-            return "장 마감 동시호가 매수 주문이 접수되었습니다. (15:30에 일괄 체결됩니다)";
+            return isCallAuction ? "장 마감 동시호가 매수 주문이 접수되었습니다. (15:30에 일괄 체결됩니다)"
+                                 : "정적 VI가 발동 중입니다. 매수 주문이 단일가 매매 대기열에 접수되었습니다.";
         }
 
-        // 3. 정규장 연속매매: 오더북(Order Book) 기반 지정가 매칭
+        // 3. Static VI (±10% 초과) 감지
+        Integer refPrice = stockInfo != null && stockInfo.get("refPrice") != null ? (Integer) stockInfo.get("refPrice") : 0;
+        if (refPrice > 0) {
+            double lowerBound = refPrice * 0.9;
+            double upperBound = refPrice * 1.1;
+            if (request.getPrice() < lowerBound || request.getPrice() > upperBound) {
+                // VI 상태로 전환
+                stockDetailRepository.updateMarketStatus(request.getStockId(), "STATIC_VI");
+                
+                // 대기열에 주문 적재
+                Order order = Order.builder()
+                        .content(OrderStatus.BUY).state(OrderStatus.WAITING)
+                        .price(request.getPrice()).amount(request.getAmount())
+                        .studentId(request.getStudentId()).stockId(request.getStockId()).build();
+                stockDetailRepository.insertOrder(order);
+                stockDetailRepository.setStudentPointDown(totalOrderPrice, request.getStudentId());
+                
+                // 2분 뒤 단일가 매매 실행 예약
+                staticViProcessor.triggerStaticVi(request.getStockId());
+                broadcastOrderUpdate(request.getStockId());
+                
+                return "주문 가격이 기준가 대비 ±10%를 초과하여 정적 VI(2분)가 발동되었습니다. 주문은 단일가 매매로 전환됩니다.";
+            }
+        }
+
+        // 4. 정규장 연속매매: 오더북(Order Book) 기반 지정가 매칭
         List<Order> sellOrders = stockDetailRepository.getMatchOrderList(
                 request.getStockId(), OrderStatus.SELL.name(), request.getPrice(), request.getStudentId());
 
@@ -185,7 +214,7 @@ public class StockOrderServiceImpl implements StockOrderService {
         validateMarketOpen();
         validateTickSize(request.getPrice());
 
-        Map<String, Object> stockInfo = stockDetailRepository.getStockInfo(request.getStockId());
+        Map<String, Object> stockInfo = stockDetailRepository.getStockInfoForUpdate(request.getStockId());
         if (stockInfo != null) {
             String status = (String) stockInfo.get("status");
             if (status != null && !"LISTED".equalsIgnoreCase(status)) {
@@ -208,9 +237,10 @@ public class StockOrderServiceImpl implements StockOrderService {
         // 시장 상태 조회
         MarketSettings settings = marketSettingsRepository.findById(1).orElse(null);
         boolean isCallAuction = settings != null && "CALL_AUCTION".equalsIgnoreCase(settings.calculateStatusCode());
+        String marketStatus = stockInfo != null ? (String) stockInfo.get("marketStatus") : "CONTINUOUS";
 
-        // 2. 동시호가 기간(CALL_AUCTION)인 경우 즉시 체결하지 않고 대기(WAITING)로만 적재
-        if (isCallAuction) {
+        // 2. 동시호가 기간(CALL_AUCTION) 또는 정적 VI(STATIC_VI)인 경우 즉시 체결하지 않고 대기(WAITING)로만 적재
+        if (isCallAuction || "STATIC_VI".equalsIgnoreCase(marketStatus)) {
             Order order = Order.builder()
                     .content(OrderStatus.SELL).state(OrderStatus.WAITING)
                     .price(request.getPrice()).amount(request.getAmount())
@@ -218,10 +248,35 @@ public class StockOrderServiceImpl implements StockOrderService {
             stockDetailRepository.insertOrder(order);
 
             broadcastOrderUpdate(request.getStockId());
-            return "장 마감 동시호가 매도 주문이 접수되었습니다. (15:30에 일괄 체결됩니다)";
+            return isCallAuction ? "장 마감 동시호가 매도 주문이 접수되었습니다. (15:30에 일괄 체결됩니다)"
+                                 : "정적 VI가 발동 중입니다. 매도 주문이 단일가 매매 대기열에 접수되었습니다.";
         }
 
-        // 3. 정규장 연속매매: 학생 간 거래 (부분 체결 로직)
+        // 3. Static VI (±10% 초과) 감지
+        Integer refPrice = stockInfo != null && stockInfo.get("refPrice") != null ? (Integer) stockInfo.get("refPrice") : 0;
+        if (refPrice > 0) {
+            double lowerBound = refPrice * 0.9;
+            double upperBound = refPrice * 1.1;
+            if (request.getPrice() < lowerBound || request.getPrice() > upperBound) {
+                // VI 상태로 전환
+                stockDetailRepository.updateMarketStatus(request.getStockId(), "STATIC_VI");
+                
+                // 대기열에 주문 적재
+                Order order = Order.builder()
+                        .content(OrderStatus.SELL).state(OrderStatus.WAITING)
+                        .price(request.getPrice()).amount(request.getAmount())
+                        .studentId(request.getStudentId()).stockId(request.getStockId()).build();
+                stockDetailRepository.insertOrder(order);
+                
+                // 2분 뒤 단일가 매매 실행 예약
+                staticViProcessor.triggerStaticVi(request.getStockId());
+                broadcastOrderUpdate(request.getStockId());
+                
+                return "주문 가격이 기준가 대비 ±10%를 초과하여 정적 VI(2분)가 발동되었습니다. 주문은 단일가 매매로 전환됩니다.";
+            }
+        }
+
+        // 4. 정규장 연속매매: 학생 간 거래 (부분 체결 로직)
         List<Order> buyOrders = stockDetailRepository.getMatchOrderList(
                 request.getStockId(), OrderStatus.BUY.name(), request.getPrice(), request.getStudentId());
 

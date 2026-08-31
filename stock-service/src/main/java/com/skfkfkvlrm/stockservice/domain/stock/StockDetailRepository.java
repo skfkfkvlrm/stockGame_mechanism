@@ -15,11 +15,19 @@ public interface StockDetailRepository {
     String setBuyOrder(String studentId, int buyPrice, int buyAmount, int stockId);
 
     Map<String, Object> getStockInfo(int stockId);
+    Map<String, Object> getStockInfoForUpdate(int stockId);
+    void updateMarketStatus(@Param("stockId") int stockId, @Param("marketStatus") String marketStatus);
+    void updateRefPrice(@Param("stockId") int stockId, @Param("refPrice") int refPrice);
     int getStockPrice(int stockId);
     int getStockPriceChange(int stockId);
     double getChangeRate(int stockId);
     int getPervPrice(int stockId);
     int getTradeVolume(int stockId);
+    
+    java.time.LocalDateTime getLastTransactionTime(int stockId);
+    Integer getVwap(@Param("stockId") int stockId, @Param("limitCount") int limitCount);
+    Integer getHighestBuyPrice(int stockId);
+    Integer getLowestSellPrice(int stockId);
 
     Integer getStudentPoint(String studentId);
     int getStudentStockAmount(@Param("stockId") int stockId, @Param("studentId") String studentId);
