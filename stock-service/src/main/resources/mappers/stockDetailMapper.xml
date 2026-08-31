@@ -203,8 +203,14 @@
 			(t.amount * t.price) AS total_price,
 			COALESCE(s_buy.student_id, o_buy.student_id) AS buyer_student_id,
 			COALESCE(s_buy.name, '시스템(매수)') AS buyer_name,
-			COALESCE(s_sell.student_id, o_sell.student_id) AS seller_student_id,
-			COALESCE(s_sell.name, CASE WHEN o_sell.student_id = 'SYSTEM_LP' THEN '초기발행(LP)' ELSE '시스템(매도)' END) AS seller_name
+			COALESCE(s_sell.student_id, o_sell.student_id, CASE WHEN t.sell_order_id IS NULL THEN 'SYSTEM_LP' ELSE NULL END) AS seller_student_id,
+			COALESCE(s_sell.name, CASE WHEN o_sell.student_id = 'SYSTEM_LP' OR t.sell_order_id IS NULL THEN '초기발행(LP)' ELSE '시스템(매도)' END) AS seller_name,
+			CASE 
+				WHEN t.sell_order_id IS NULL THEN '매수'
+				WHEN t.buy_order_id IS NULL THEN '매도'
+				WHEN t.buy_order_id > t.sell_order_id THEN '매수'
+				ELSE '매도'
+			END AS trade_type
 		FROM stock_transactions t
 		JOIN orders o_buy ON t.buy_order_id = o_buy.order_id
 		LEFT JOIN students s_buy ON (o_buy.student_id = CAST(s_buy.id AS CHAR) OR o_buy.student_id = s_buy.student_id)

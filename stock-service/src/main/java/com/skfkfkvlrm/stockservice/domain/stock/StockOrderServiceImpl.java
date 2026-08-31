@@ -137,6 +137,51 @@ public class StockOrderServiceImpl implements StockOrderService {
             }
         }
 
+        // 3.5. 초기 발행(LP) 잔량 매수 (publicationBalance)
+        Map<String, Object> pubInfo = stockDetailRepository.getStockPubInfo(request.getStockId());
+        int pubAmount = getIntOrDefault(pubInfo, "pubAmount");
+        int pubPrice = getIntOrDefault(pubInfo, "pubPrice");
+        
+        if (pubAmount > 0 && request.getPrice() >= pubPrice) {
+            int matchAmount = Math.min(request.getAmount(), pubAmount);
+            int matchPrice = pubPrice;
+            int matchTotalPrice = matchPrice * matchAmount;
+
+            // 발행 잔량 차감
+            stockDetailRepository.setStockPubBalance(matchAmount, request.getStockId());
+
+            // 매수 주문 체결 처리
+            Order buyFilled = Order.builder()
+                    .content(OrderStatus.BUY).state(OrderStatus.MATCHED)
+                    .price(matchPrice).amount(matchAmount)
+                    .studentId(request.getStudentId()).stockId(request.getStockId()).build();
+            stockDetailRepository.insertOrder(buyFilled);
+            int buyOrderId = buyFilled.getOrderId();
+
+            // 매도(시스템 LP) 주문 체결 처리
+            Order sellFilled = Order.builder()
+                    .content(OrderStatus.SELL).state(OrderStatus.MATCHED)
+                    .price(matchPrice).amount(matchAmount)
+                    .studentId("SYSTEM_LP").stockId(request.getStockId()).build();
+            stockDetailRepository.insertOrder(sellFilled);
+            int sellOrderId = sellFilled.getOrderId();
+
+            // 거래 기록 및 정산
+            stockDetailRepository.setMatchedOrder(buyOrderId, sellOrderId, matchAmount, matchPrice);
+            stockDetailRepository.setStudentPointDown(matchTotalPrice, request.getStudentId());
+            stockPriceHistoryRepository.upsertDailyPrice(request.getStockId(), LocalDate.now(), matchPrice, matchAmount);
+
+            // 남은 수량 갱신
+            request.setAmount(request.getAmount() - matchAmount);
+            
+            // 전량 체결 시 조기 종료
+            if (request.getAmount() == 0) {
+                stockDetailRepository.updateRefPrice(request.getStockId(), matchPrice);
+                broadcastOrderUpdate(request.getStockId());
+                return "초기 발행 잔량으로 전량 체결되었습니다.";
+            }
+        }
+
         // 4. 정규장 연속매매: 오더북(Order Book) 기반 지정가 매칭
         List<Order> sellOrders = stockDetailRepository.getMatchOrderList(
                 request.getStockId(), OrderStatus.SELL.name(), request.getPrice(), request.getStudentId());

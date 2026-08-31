@@ -33,7 +33,13 @@
             MAX(grade) AS grade, 
             MAX(class_name) AS className, 
             MAX(class_number) AS classNumber, 
-            MAX(total_point) AS totalPoint
+            MAX(total_point) AS totalPoint,
+            COALESCE((
+                SELECT COUNT(*) 
+                FROM coupon_purchase cp 
+                JOIN students s2 ON (cp.student_id = s2.id OR cp.student_id = CAST(s2.id AS CHAR) OR cp.student_id = s2.student_id)
+                WHERE s2.student_id = students.student_id AND cp.state = '사용전'
+            ), 0) AS totalCoupon
         FROM students
         WHERE status = 'ACTIVE'
         GROUP BY student_id

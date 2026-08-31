@@ -20,4 +20,5 @@ public class StudentRankingResponse {
     private String className;
     private int classNumber;
     private int totalPoint;
+    private int totalCoupon;
 }
