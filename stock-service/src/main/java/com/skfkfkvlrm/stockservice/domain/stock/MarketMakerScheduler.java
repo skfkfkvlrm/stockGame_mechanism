@@ -35,7 +35,7 @@ public class MarketMakerScheduler {
     @Transactional
     public void executeMarketMaking() {
         MarketSettings settings = marketSettingsRepository.findById(1).orElse(null);
-        if (settings == null || !settings.calculateIsMarketOpen() || !"CONTINUOUS".equalsIgnoreCase(settings.calculateStatusCode())) {
+        if (settings == null || !settings.calculateIsMarketOpen() || !"OPEN".equalsIgnoreCase(settings.calculateStatusCode())) {
             return; // 장이 열려있지 않거나, 동시호가 상태면 LP 로직 중단
         }
 
