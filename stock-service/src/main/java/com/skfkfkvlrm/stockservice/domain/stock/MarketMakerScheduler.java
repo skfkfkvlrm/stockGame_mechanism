@@ -98,8 +98,10 @@ public class MarketMakerScheduler {
             vwap = currentPrice;
         }
 
-        int lpBuyPrice = (int) (vwap * (1.0 - MARGIN_RATE));
-        int lpSellPrice = (int) (vwap * (1.0 + MARGIN_RATE));
+        double randomBuyMargin = 0.01 + (Math.random() * 0.02);
+        double randomSellMargin = 0.01 + (Math.random() * 0.02);
+        int lpBuyPrice = (int) (vwap * (1.0 - randomBuyMargin));
+        int lpSellPrice = (int) (vwap * (1.0 + randomSellMargin));
         
         // 최소 호가 단위 적용 (음수 방지)
         lpBuyPrice = Math.max(1, lpBuyPrice);
