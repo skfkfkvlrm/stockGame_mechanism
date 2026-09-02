@@ -28,7 +28,7 @@ public class MarketMakerScheduler {
 
     private static final String LP_STUDENT_ID = "SYSTEM_LP";
     private static final int VWAP_LIMIT = 20; // 최근 20건 기준
-    private static final double MARGIN_RATE = 0.05; // 5% 스프레드 마진
+    private static final double MARGIN_RATE = 0.02; // 2% 스프레드 마진
     private static final int LP_ORDER_AMOUNT = 10; // 호가당 10주 공급
 
     @Scheduled(cron = "0 * * * * *") // 매 분 0초 실행
@@ -72,7 +72,7 @@ public class MarketMakerScheduler {
             return;
         }
 
-        // 3. 현재 오더북 스프레드 5% 초과 검사
+        // 3. 현재 오더북 스프레드 2% 초과 검사
         Integer highestBuy = stockDetailRepository.getHighestBuyPrice(stockId);
         Integer lowestSell = stockDetailRepository.getLowestSellPrice(stockId);
         
@@ -83,7 +83,7 @@ public class MarketMakerScheduler {
             needsLiquidity = true;
         } else {
             double spread = (double) (lowestSell - highestBuy) / lowestSell;
-            if (spread >= 0.05) {
+            if (spread >= 0.02) {
                 needsLiquidity = true;
             }
         }
