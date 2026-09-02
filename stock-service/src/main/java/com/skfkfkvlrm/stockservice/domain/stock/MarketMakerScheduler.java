@@ -27,16 +27,17 @@ public class MarketMakerScheduler {
     private final SimpMessagingTemplate messagingTemplate;
 
     private static final String LP_STUDENT_ID = "SYSTEM_LP";
-    private static final int VWAP_LIMIT = 20; // 최근 20건 기준
-    private static final double MARGIN_RATE = 0.02; // 2% 스프레드 마진
-    private static final int LP_ORDER_AMOUNT = 10; // 호가당 10주 공급
+    private static final int VWAP_LIMIT = 20;
+    private static final double MIN_MARGIN = 0.01;
+    private static final double MAX_MARGIN = 0.04;
+    private static final int LP_ORDER_AMOUNT = 10;
 
-    @Scheduled(cron = "0 * * * * *") // 매 분 0초 실행
+    @Scheduled(cron = "0 * * * * *")
     @Transactional
     public void executeMarketMaking() {
         MarketSettings settings = marketSettingsRepository.findById(1).orElse(null);
         if (settings == null || !settings.calculateIsMarketOpen() || !"OPEN".equalsIgnoreCase(settings.calculateStatusCode())) {
-            return; // 장이 열려있지 않거나, 동시호가 상태면 LP 로직 중단
+            return;
         }
 
         List<Stock> stocks = stockListRepository.getAllStocks();
@@ -44,35 +45,31 @@ public class MarketMakerScheduler {
             try {
                 processLiquidityProviding(stock.getStockId());
             } catch (Exception e) {
-                log.error("[MarketMaker] 종목 {} LP 봇 실행 중 예외 발생", stock.getStockId(), e);
+                log.error("[MarketMaker] LP bot exception for stock {}", stock.getStockId(), e);
             }
         }
     }
 
     private void processLiquidityProviding(int stockId) {
-        // 1. 상태 검증
         Map<String, Object> stockInfo = stockDetailRepository.getStockInfoForUpdate(stockId);
         if (stockInfo == null || !"CONTINUOUS".equalsIgnoreCase((String) stockInfo.get("marketStatus"))) {
             return;
         }
 
-        // 2. 거래 공백 기간 검증 (20~40분 랜덤 개입)
         LocalDateTime lastTxTime = stockDetailRepository.getLastTransactionTime(stockId);
         if (lastTxTime == null) {
-            lastTxTime = LocalDateTime.now().minusMinutes(60); // 거래내역이 없으면 무조건 개입 대상으로 간주
+            lastTxTime = LocalDateTime.now().minusMinutes(60);
         }
 
         long inactivityMinutes = ChronoUnit.MINUTES.between(lastTxTime, LocalDateTime.now());
         if (inactivityMinutes < 20) {
-            return; // 20분 미만이면 개입 안 함
+            return;
         }
         
-        // 20~40분 사이일 때 매 분마다 5%의 확률로 개입 (패턴화 방지)
         if (inactivityMinutes < 40 && Math.random() > 0.05) {
             return;
         }
 
-        // 3. 현재 오더북 스프레드 2% 초과 검사
         Integer highestBuy = stockDetailRepository.getHighestBuyPrice(stockId);
         Integer lowestSell = stockDetailRepository.getLowestSellPrice(stockId);
         
@@ -92,31 +89,41 @@ public class MarketMakerScheduler {
             return;
         }
 
-        // 4. VWAP 계산 및 LP 호가 제출
         Integer vwap = stockDetailRepository.getVwap(stockId, VWAP_LIMIT);
         if (vwap == null || vwap == 0) {
             vwap = currentPrice;
         }
 
-        double randomBuyMargin = 0.01 + (Math.random() * 0.02);
-        double randomSellMargin = 0.01 + (Math.random() * 0.02);
-        int lpBuyPrice = (int) (vwap * (1.0 - randomBuyMargin));
-        int lpSellPrice = (int) (vwap * (1.0 + randomSellMargin));
-        
-        // 최소 호가 단위 적용 (음수 방지)
-        lpBuyPrice = Math.max(1, lpBuyPrice);
+        log.info("🤖 [MarketMaker] Distributing liquidity for stock {} (inactivity {}m)", stockId, inactivityMinutes);
 
-        log.info("🤖 [MarketMaker] 종목 {} 유동성 공급 (공백 {}분) - 매수: {}, 매도: {}", stockId, inactivityMinutes, lpBuyPrice, lpSellPrice);
-
-        // 기존 LP 주문 취소 (호가 누적 방지)
         cancelExistingLpOrders(stockId);
 
-        // 매수/매도 주문 직접 Insert (포인트, 주식 잔고 우회)
-        insertLpOrder(stockId, OrderStatus.BUY, lpBuyPrice, LP_ORDER_AMOUNT);
-        insertLpOrder(stockId, OrderStatus.SELL, lpSellPrice, LP_ORDER_AMOUNT);
+        distributeLpOrders(stockId, OrderStatus.BUY, vwap, LP_ORDER_AMOUNT);
+        distributeLpOrders(stockId, OrderStatus.SELL, vwap, LP_ORDER_AMOUNT);
 
-        // 프론트엔드 호가창 갱신 브로드캐스트
         messagingTemplate.convertAndSend("/topic/orders/" + stockId, "ORDER_UPDATED");
+    }
+
+    private void distributeLpOrders(int stockId, OrderStatus content, int vwap, int totalAmount) {
+        int remainingAmount = totalAmount;
+        int splits = 3 + (int) (Math.random() * 3); 
+
+        for (int i = 0; i < splits; i++) {
+            if (remainingAmount <= 0) break;
+
+            int amount = (i == splits - 1) ? remainingAmount : Math.max(1, (int) (Math.random() * (remainingAmount / 2 + 1)));
+            if (amount == 0) amount = 1;
+
+            double randomMargin = MIN_MARGIN + (Math.random() * (MAX_MARGIN - MIN_MARGIN));
+            int price = (content == OrderStatus.BUY)
+                    ? (int) (vwap * (1.0 - randomMargin))
+                    : (int) (vwap * (1.0 + randomMargin));
+            
+            price = Math.max(1, price);
+
+            insertLpOrder(stockId, content, price, amount);
+            remainingAmount -= amount;
+        }
     }
 
     private void cancelExistingLpOrders(int stockId) {
