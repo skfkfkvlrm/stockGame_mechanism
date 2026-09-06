@@ -78,7 +78,7 @@
             WHERE (o.student_id = #{studentId} 
                    OR o.student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = #{studentId} LIMIT 1)
                    OR o.student_id = (SELECT student_id FROM students WHERE CAST(id AS CHAR) = #{studentId} LIMIT 1))
-              AND o.content IN ('매수', 'BUY') AND o.state IN ('대기', 'WAITING')
+              AND o.content IN ('매수', 'BUY') AND o.state IN ('WAITING', '취소', 'CANCELLED')
 
             UNION ALL 
 
