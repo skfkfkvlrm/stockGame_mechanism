@@ -35,13 +35,32 @@ public class DynamicNewsService {
     private final StockDetailRepository stockDetailRepository;
     private final StockPriceHistoryRepository stockPriceHistoryRepository;
     private final SimpMessagingTemplate messagingTemplate;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private RestTemplate restTemplate = createRestTemplate();
+
+    private static RestTemplate createRestTemplate() {
+        org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(3000);
+        factory.setReadTimeout(3000);
+        return new RestTemplate(factory);
+    }
+
+    public void setRestTemplate(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
+
+    public void setOllamaUrl(String ollamaUrl) {
+        this.ollamaUrl = ollamaUrl;
+    }
+
+    public void setModelName(String modelName) {
+        this.modelName = modelName;
+    }
 
     @Value("${ollama.url:http://localhost:11434/api/generate}")
-    private String ollamaUrl;
+    private String ollamaUrl = "http://localhost:11434/api/generate";
 
     @Value("${ollama.model:qwen2.5-coder:7b}")
-    private String modelName;
+    private String modelName = "qwen2.5-coder:7b";
 
     private final Random random = new Random();
 
