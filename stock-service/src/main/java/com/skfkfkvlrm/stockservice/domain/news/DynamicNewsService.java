@@ -56,9 +56,26 @@ public class DynamicNewsService {
         this.modelName = modelName;
     }
 
+    /* =========================================================================
+     * [로컬 모델(Ollama) 분리 이관 안내]
+     * 기존 로컬 LLM(Ollama qwen2.5-coder:7b) 연동 및 장애 방어 코드는
+     * 동일 패키지 내 'OllamaNewsServiceLegacy.java'로 100% 보존 이관되었습니다.
+     * 본 서비스는 Google AI Studio의 무료 Gemini API(1.5 Flash)로 전환될 예정입니다.
+     * ========================================================================= */
+
+    // [Gemini API 설정 예정 (무료 티어: 15 RPM / 1,500 RPD)]
+    @Value("${gemini.api-key:}")
+    private String geminiApiKey;
+
+    @Value("${gemini.model:gemini-1.5-flash}")
+    private String geminiModel;
+
+    // [Legacy Ollama 설정 - 보존 및 하위 호환성 유지]
+    @Deprecated
     @Value("${ollama.url:http://localhost:11434/api/generate}")
     private String ollamaUrl = "http://localhost:11434/api/generate";
 
+    @Deprecated
     @Value("${ollama.model:qwen2.5-coder:7b}")
     private String modelName = "qwen2.5-coder:7b";
 

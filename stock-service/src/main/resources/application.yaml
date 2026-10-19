@@ -18,6 +18,12 @@ spring:
 jwt:
   secret: ${JWT_SECRET:defaultSecretKeyWithAtLeast32BytesLengthForHmacSha256!}
 
+# [Gemini API 설정 (Google AI Studio Free Tier)]
+gemini:
+  api-key: ${GEMINI_API_KEY:}
+  model: ${GEMINI_MODEL:gemini-1.5-flash}
+
+# [Legacy Ollama 설정 - 보존용]
 ollama:
   url: ${OLLAMA_URL:http://localhost:11434/api/generate}
   model: ${OLLAMA_MODEL:qwen2.5-coder:7b}
