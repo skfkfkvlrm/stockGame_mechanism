@@ -37,3 +37,11 @@ node_modules/
 *.log
 logs/
 
+### Local Environment & Secrets ###
+.env
+.env.*
+*.local.yaml
+*.local.properties
+application-local.yaml
+application-local.properties
+

@@ -160,6 +160,57 @@ class DynamicNewsServiceFallbackTest {
     }
 
     @Test
+    @DisplayName("[시나리오 5 - 신규] Gemini API 정상 응답 시 candidates[0].content.parts[0].text 파싱 및 뉴스 발행 검증")
+    void testGeminiNormalExecution_ShouldPublishAiNews() {
+        // given: Gemini API Key 설정
+        dynamicNewsService.setGeminiApiKey("dummy-test-key");
+        dynamicNewsService.setGeminiModel("gemini-2.5-flash-lite");
+
+        Map<String, Object> part = Collections.singletonMap("text", "\"새콤달콤 글로벌 수출 계약 체결로 역대 최고 실적 달성 전망\"");
+        Map<String, Object> content = Collections.singletonMap("parts", Collections.singletonList(part));
+        Map<String, Object> candidate = Collections.singletonMap("content", content);
+        Map<String, Object> responseBody = Collections.singletonMap("candidates", Collections.singletonList(candidate));
+
+        ResponseEntity<Map> mockResponseEntity = new ResponseEntity<>(responseBody, HttpStatus.OK);
+
+        when(mockRestTemplate.postForEntity(contains("googleapis.com"), any(HttpEntity.class), eq(Map.class)))
+                .thenReturn(mockResponseEntity);
+
+        // when
+        assertDoesNotThrow(() -> dynamicNewsService.generateStockNews());
+
+        // then
+        ArgumentCaptor<String> newsCaptor = ArgumentCaptor.forClass(String.class);
+        verify(newsRepository, atLeastOnce()).insertNews(newsCaptor.capture());
+        verify(messagingTemplate, atLeastOnce()).convertAndSend(eq("/topic/news"), newsCaptor.capture());
+
+        String publishedNews = newsCaptor.getValue();
+        assertThat(publishedNews).contains("새콤달콤 글로벌 수출 계약 체결");
+        assertThat(publishedNews).doesNotStartWith("\"");
+    }
+
+    @Test
+    @DisplayName("[시나리오 6 - 신규] Gemini API 503 고부하(High Demand) 또는 3초 타임아웃 발생 시 10종 Fallback 템플릿으로 무중단 전환")
+    void testGemini503OrTimeout_ShouldFallbackToTemplate() {
+        // given: Gemini API Key 설정
+        dynamicNewsService.setGeminiApiKey("dummy-test-key");
+
+        when(mockRestTemplate.postForEntity(contains("googleapis.com"), any(HttpEntity.class), eq(Map.class)))
+                .thenThrow(new ResourceAccessException("Read timed out", new SocketTimeoutException("Read timed out")));
+
+        // when
+        assertDoesNotThrow(() -> dynamicNewsService.generateStockNews());
+
+        // then
+        ArgumentCaptor<String> newsCaptor = ArgumentCaptor.forClass(String.class);
+        verify(newsRepository, atLeastOnce()).insertNews(newsCaptor.capture());
+        verify(messagingTemplate, atLeastOnce()).convertAndSend(eq("/topic/news"), newsCaptor.capture());
+
+        assertThat(newsCaptor.getValue()).isNotBlank();
+        assertThat(newsCaptor.getValue()).contains("새콤달콤");
+    }
+
+    @Test
     @DisplayName("[시나리오 4] 시황 Fallback 템플릿 풀이 정확히 호재 5종 + 악재 5종 = 총 10종으로 구성되어 있는지 검증")
     void testTemplatePoolIntegrity_ShouldHaveExactly10Templates() throws Exception {
         Field posField = DynamicNewsService.class.getDeclaredField("POSITIVE_NEWS_TEMPLATES");
