@@ -35,7 +35,7 @@
         SELECT COUNT(*) FROM students WHERE student_id = #{studentId}
     </select>
 
-    <!-- 전체 학생 목록 조회 (관리자용) -->
+    <!-- 전체 학생 목록 조회 (관리자용 - 삭제된 학생 제외) -->
     <select id="getAllStudents" resultType="com.skfkfkvlrm.stockgame_spring.domain.admin.StudentAdminResponse">
         SELECT 
             MAX(id) AS id, 
@@ -47,25 +47,72 @@
             MAX(total_point) AS totalPoint, 
             MAX(total_coupon) AS totalCoupon
         FROM students
+        WHERE status != 'DELETED' OR status IS NULL
         GROUP BY student_id
         ORDER BY MAX(id) ASC
     </select>
 
-    <!-- 학생 총 포인트 랭킹 조회 -->
+    <!-- 학생 총 순자산(포인트+주식평가액) 랭킹 조회 (삭제 및 테스트 계정 제외) -->
     <select id="getStudentRanking" resultType="com.skfkfkvlrm.stockgame_spring.domain.member.StudentRankingResponse">
         SELECT 
-            ROW_NUMBER() OVER(ORDER BY MAX(total_point) DESC, student_id ASC) AS `rank`,
-            student_id AS studentId, 
-            MAX(name) AS name, 
-            MAX(grade) AS grade, 
-            MAX(class_name) AS className, 
-            MAX(class_number) AS classNumber, 
-            MAX(total_point) AS totalPoint
-        FROM students
-        GROUP BY student_id
-        ORDER BY MAX(total_point) DESC, student_id ASC
+            ROW_NUMBER() OVER(ORDER BY (MAX(s.total_point) + COALESCE(MAX(se.eval_total), 0)) DESC, s.student_id ASC) AS `rank`,
+            s.student_id AS studentId, 
+            MAX(s.name) AS name, 
+            MAX(s.grade) AS grade, 
+            MAX(s.class_name) AS className, 
+            MAX(s.class_number) AS classNumber, 
+            MAX(s.total_point) AS totalPoint,
+            COALESCE(MAX(se.eval_total), 0) AS stockEvaluation,
+            (MAX(s.total_point) + COALESCE(MAX(se.eval_total), 0)) AS totalAsset,
+            COALESCE((
+                SELECT COUNT(*) 
+                FROM coupon_purchase cp 
+                JOIN students s2 ON (cp.student_id = s2.id OR cp.student_id = CAST(s2.id AS CHAR) OR cp.student_id = s2.student_id)
+                WHERE s2.student_id = s.student_id AND cp.state = '사용전'
+            ), 0) AS totalCoupon
+        FROM students s
+        LEFT JOIN (
+            SELECT 
+                o.student_id,
+                SUM(
+                    (CASE WHEN o.content IN ('매수', 'BUY') THEN o.amount ELSE -o.amount END) *
+                    COALESCE(
+                        (SELECT o2.price 
+                         FROM stock_transactions t 
+                         JOIN orders o2 ON t.buy_order_id = o2.order_id 
+                         WHERE o2.stock_id = o.stock_id 
+                         ORDER BY t.created_date DESC LIMIT 1),
+                        stk.publication_price
+                    )
+                ) AS eval_total
+            FROM orders o
+            JOIN stocks stk ON o.stock_id = stk.stock_id
+            WHERE o.state IN ('체결', 'MATCHED')
+            GROUP BY o.student_id
+        ) se ON (se.student_id = s.student_id OR se.student_id = CAST(s.id AS CHAR))
+        WHERE (s.status = 'ACTIVE' OR s.status IS NULL)
+          AND s.student_id NOT LIKE '%test%'
+          AND s.name NOT LIKE '%테스트%'
+          AND s.name NOT LIKE '%검증%'
+        GROUP BY s.student_id
+        ORDER BY `rank` ASC
         LIMIT 100
     </select>
+
+    <!-- 학생 현재 포인트 조회 -->
+    <select id="getStudentPoint" parameterType="String" resultType="int">
+        SELECT COALESCE(total_point, 0)
+        FROM students
+        WHERE student_id = #{studentId} OR CAST(id AS CHAR) = #{studentId}
+        LIMIT 1
+    </select>
+
+    <!-- 학생 비파괴 Soft Delete -->
+    <update id="deleteStudent" parameterType="String">
+        UPDATE students
+        SET status = 'DELETED'
+        WHERE student_id = #{studentId} OR CAST(id AS CHAR) = #{studentId}
+    </update>
 
     <!-- 학생 포인트 지급/차감 -->
     <update id="updateStudentPoint">

@@ -16,7 +16,7 @@ public class MemberController {
     private final MemberService memberService;
     private final com.skfkfkvlrm.stockgame_spring.auth.JwtUtil jwtUtil;
 
-    @PostMapping("/join")
+    @PostMapping({"/join", "/join/student"})
     public ApiResponse<Boolean> join(@RequestBody StudentJoinRequest request) {
         boolean isJoined = memberService.join(request);
         return ApiResponse.success("회원가입 성공", isJoined);

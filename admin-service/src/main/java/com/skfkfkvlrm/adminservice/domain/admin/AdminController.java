@@ -178,4 +178,73 @@ public class AdminController {
     public ApiResponse<Boolean> deleteCoupon(@PathVariable("couponId") int couponId) {
         return couponClient.deleteCoupon(couponId);
     }
+
+    // --- 교실 1-클릭 세션 리셋 (POST /api/admin/market/reset-session) ---
+    @PostMapping("/market/reset-session")
+    public ApiResponse<Map<String, Object>> resetSession(@RequestBody(required = false) Map<String, Object> body) {
+        try {
+            memberClient.resetSessionMembers(body);
+        } catch (Exception e) {
+            System.err.println("Member reset session failed: " + e.getMessage());
+        }
+
+        try {
+            stockClient.resetSessionStock(body);
+        } catch (Exception e) {
+            System.err.println("Stock reset session failed: " + e.getMessage());
+        }
+
+        try {
+            couponClient.resetSessionCoupons();
+        } catch (Exception e) {
+            System.err.println("Coupon reset session failed: " + e.getMessage());
+        }
+
+        MarketSettings settings = marketSettingsRepository.findById(1).orElse(null);
+        if (settings != null) {
+            settings.setMarketOpen(false);
+            settings.setStatusCode("CLOSED");
+            marketSettingsRepository.save(settings);
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        result.put("message", "전체 학생 포인트, 주문, 보유 주식, 쿠폰이 성공적으로 초기화되었습니다.");
+        return ApiResponse.success("Session reset completed", result);
+    }
+
+    // --- 관리자 데모 세션 롤백 (POST /api/admin/demo/rollback) ---
+    @PostMapping("/demo/rollback")
+    public ApiResponse<Map<String, Object>> rollbackAdminDemoSession() {
+        try {
+            memberClient.rollbackAdminDemoMembers();
+        } catch (Exception e) {
+            System.err.println("Member rollback failed: " + e.getMessage());
+        }
+
+        try {
+            stockClient.rollbackAdminDemoStock();
+        } catch (Exception e) {
+            System.err.println("Stock rollback failed: " + e.getMessage());
+        }
+
+        try {
+            couponClient.rollbackAdminDemoCoupons();
+        } catch (Exception e) {
+            System.err.println("Coupon rollback failed: " + e.getMessage());
+        }
+
+        MarketSettings settings = marketSettingsRepository.findById(1).orElse(null);
+        if (settings != null) {
+            settings.setMode("AUTO");
+            settings.setMarketOpen(true);
+            settings.setStatusCode("OPEN");
+            marketSettingsRepository.save(settings);
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        result.put("message", "관리자 데모 세션(삭제 학생, 시드 종목, 시드 쿠폰, 포인트 수동 조정분, 시장 설정)이 정상 복원되었습니다.");
+        return ApiResponse.success("Admin demo session rollback completed", result);
+    }
 }

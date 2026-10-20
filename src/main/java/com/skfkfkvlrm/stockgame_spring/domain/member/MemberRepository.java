@@ -33,4 +33,10 @@ public interface MemberRepository {
 
     // 포인트 지급/차감 이력 생성
     int insertPointHistory(@org.apache.ibatis.annotations.Param("studentId") String studentId, @org.apache.ibatis.annotations.Param("amount") int amount, @org.apache.ibatis.annotations.Param("reason") String reason);
+
+    // 학생 현재 포인트 조회
+    int getStudentPoint(@org.apache.ibatis.annotations.Param("studentId") String studentId);
+
+    // 학생 비파괴 Soft Delete
+    int deleteStudent(@org.apache.ibatis.annotations.Param("studentId") String studentId);
 }

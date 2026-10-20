@@ -21,6 +21,10 @@ public class MemberServiceImpl implements MemberService {
     public boolean join(StudentJoinRequest request) {
         request.setPassword(passwordEncoder.encode(request.getPassword()));
         int member = memberRepository.setMember(request);
+        if (member > 0) {
+            int initialPoint = "demo".equals(request.getStudentId()) ? 1000000 : 100000;
+            memberRepository.insertGetPoint(request.getStudentId(), initialPoint, "기초 투자금 지급");
+        }
         return member > 0;
     }
 
@@ -76,7 +80,6 @@ public class MemberServiceImpl implements MemberService {
         throw new IllegalArgumentException("아이디 또는 비밀번호가 올바르지 않습니다.");
     }
 
-
     @Override
     public boolean getIdCheck(String studentId) {
         return memberRepository.getIdCheck(studentId) > 0;
@@ -117,6 +120,5 @@ public class MemberServiceImpl implements MemberService {
         }
 
         throw new IllegalArgumentException("사용자 정보를 찾을 수 없습니다.");
-
     }
 }

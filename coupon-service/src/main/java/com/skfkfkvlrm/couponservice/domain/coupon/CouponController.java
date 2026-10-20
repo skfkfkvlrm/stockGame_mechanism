@@ -135,4 +135,22 @@ public class CouponController {
         List<CouponPurchase> coupons = couponRepository.getMyCouponList(studentId);
         return ApiResponse.success("Student coupons fetched", coupons);
     }
+
+    @PostMapping("/demo/reset")
+    public ApiResponse<Boolean> resetDemoCoupons() {
+        couponRepository.deleteDemoCoupons();
+        return ApiResponse.success("Demo coupons reset successfully", true);
+    }
+
+    @PostMapping("/admin/demo/rollback")
+    public ApiResponse<Boolean> rollbackAdminDemoCoupons() {
+        couponRepository.restoreSeedCoupons();
+        return ApiResponse.success("Seed coupons restored successfully", true);
+    }
+
+    @PostMapping("/admin/reset-session")
+    public ApiResponse<Boolean> resetSessionCoupons() {
+        couponRepository.deleteAllCouponPurchases();
+        return ApiResponse.success("All student coupons reset successfully", true);
+    }
 }

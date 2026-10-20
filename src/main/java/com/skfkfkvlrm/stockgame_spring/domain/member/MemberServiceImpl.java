@@ -27,6 +27,13 @@ public class MemberServiceImpl implements MemberService {
         // 비밀번호 BCrypt 해싱
         request.setPassword(passwordEncoder.encode(request.getPassword()));
         int member = memberRepository.setMember(request);
+        if (member > 0) {
+            try {
+                memberRepository.insertPointHistory(request.getStudentId(), 30000, "신규 회원가입 기초 투자금 지급");
+            } catch (Exception e) {
+                System.err.println("Failed to insert initial point history for " + request.getStudentId() + ": " + e.getMessage());
+            }
+        }
         return member > 0;
     }
 

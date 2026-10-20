@@ -76,4 +76,10 @@ public interface StockDetailRepository {
     void confiscateAllStocksByStudentId(@Param("studentId") String studentId);
     int getStudentTotalPoint(@Param("studentId") String studentId);
     void clearStudentTotalPoint(@Param("studentId") String studentId);
+
+    // 데모 리셋 및 관리자 롤백 / 세션 리셋용
+    void restoreSeedStocks();
+    void resetStockPricesToPublication();
+    void cancelAllMarketWaitingOrders();
+    void clearAllStudentHoldings();
 }

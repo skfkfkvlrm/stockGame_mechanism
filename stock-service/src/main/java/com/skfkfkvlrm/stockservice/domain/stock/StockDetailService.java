@@ -20,4 +20,10 @@ public interface StockDetailService {
     void delistStock(int stockId, int compensationPrice, String reason);
     // 학생 탈퇴에 따른 강제 청산
     void liquidateStudentAssets(String studentId);
+    // 데모 학생 주식 리셋
+    void resetDemoStock();
+    // 관리자 데모 주식 롤백
+    void rollbackAdminDemoStock();
+    // 교실 세션 리셋
+    void resetSessionStock(boolean resetStockPrice);
 }

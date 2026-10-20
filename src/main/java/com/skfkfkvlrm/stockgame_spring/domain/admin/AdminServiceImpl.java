@@ -101,4 +101,10 @@ public class AdminServiceImpl implements AdminService {
     public void deleteCoupon(int couponId) {
         couponRepository.deleteCoupon(couponId);
     }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public void deleteStudent(String studentId) {
+        memberRepository.deleteStudent(studentId);
+    }
 }

@@ -213,4 +213,35 @@ public class StockDetailController {
         Map<String, Object> result = closingAuctionService.executeClosingAuctionForAllStocks();
         return ApiResponse.success("장 마감 동시호가 단일가 일괄 체결이 실행되었습니다.", result);
     }
+
+    @PostMapping("/demo/reset")
+    public ApiResponse<Map<String, Object>> resetDemoStock() {
+        stockDetailService.resetDemoStock();
+        Map<String, Object> data = new HashMap<>();
+        data.put("success", true);
+        data.put("message", "데모 계정의 대기 주문 취소 및 보유 주식이 SYSTEM_LP로 이관되었습니다.");
+        return ApiResponse.success("Demo stock reset successfully", data);
+    }
+
+    @PostMapping("/admin/demo/rollback")
+    public ApiResponse<Map<String, Object>> rollbackAdminDemoStock() {
+        stockDetailService.rollbackAdminDemoStock();
+        Map<String, Object> data = new HashMap<>();
+        data.put("success", true);
+        data.put("message", "시드 종목 22종이 정상 거래 상태로 복원되었습니다.");
+        return ApiResponse.success("Admin demo stock rollback successfully", data);
+    }
+
+    @PostMapping("/admin/reset-session")
+    public ApiResponse<Map<String, Object>> resetSessionStock(@RequestBody(required = false) Map<String, Object> body) {
+        boolean resetStockPrice = true;
+        if (body != null && body.containsKey("resetStockPrice")) {
+            resetStockPrice = Boolean.parseBoolean(String.valueOf(body.get("resetStockPrice")));
+        }
+        stockDetailService.resetSessionStock(resetStockPrice);
+        Map<String, Object> data = new HashMap<>();
+        data.put("success", true);
+        data.put("message", "전체 학생 주문 취소 및 주식 자산 초기화가 완료되었습니다.");
+        return ApiResponse.success("Session stock reset successfully", data);
+    }
 }

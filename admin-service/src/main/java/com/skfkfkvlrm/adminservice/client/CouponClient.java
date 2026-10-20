@@ -24,4 +24,10 @@ public interface CouponClient {
 
     @GetMapping("/api/coupons/admin/students/{studentId}")
     ApiResponse<List<Map<String, Object>>> getStudentCoupons(@PathVariable("studentId") String studentId);
+
+    @PostMapping("/api/coupons/admin/reset-session")
+    ApiResponse<Boolean> resetSessionCoupons();
+
+    @PostMapping("/api/coupons/admin/demo/rollback")
+    ApiResponse<Boolean> rollbackAdminDemoCoupons();
 }

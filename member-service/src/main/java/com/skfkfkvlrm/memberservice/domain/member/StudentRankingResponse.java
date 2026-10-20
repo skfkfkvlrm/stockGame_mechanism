@@ -21,4 +21,6 @@ public class StudentRankingResponse {
     private int classNumber;
     private int totalPoint;
     private int totalCoupon;
+    private long totalAsset;
+    private long stockEvaluation;
 }

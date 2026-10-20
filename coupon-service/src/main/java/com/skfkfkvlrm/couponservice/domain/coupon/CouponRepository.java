@@ -14,4 +14,7 @@ public interface CouponRepository {
     int insertCoupon(@Param("couponCode") String couponCode, @Param("name") String name, @Param("price") int price, @Param("status") String status);
     int updateCoupon(@Param("couponId") int couponId, @Param("name") String name, @Param("price") int price, @Param("status") String status);
     int deleteCoupon(@Param("couponId") int couponId);
+    void deleteDemoCoupons();
+    void restoreSeedCoupons();
+    void deleteAllCouponPurchases();
 }

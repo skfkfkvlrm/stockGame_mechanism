@@ -79,8 +79,33 @@ public class AdminController {
     public ApiResponse<Boolean> adjustPoint(
             @org.springframework.web.bind.annotation.PathVariable("studentId") String studentId,
             @org.springframework.web.bind.annotation.RequestBody PointAdjustmentRequest request) {
-        adminService.adjustStudentPoint(studentId, request.getAmount(), request.getReason());
+        int amount = request.getAmount();
+        String type = request.getType();
+        if ("subtract".equalsIgnoreCase(type) || "deduct".equalsIgnoreCase(type)) {
+            amount = -Math.abs(amount);
+        }
+
+        // 음수 잔액 방어 가드
+        Map<String, Object> detail = adminService.getStudentDetail(studentId);
+        int currentPoint = 0;
+        if (detail != null && detail.get("dashboard") != null) {
+            Object dash = detail.get("dashboard");
+            if (dash instanceof com.skfkfkvlrm.stockgame_spring.domain.point.DashboardResponse) {
+                currentPoint = ((com.skfkfkvlrm.stockgame_spring.domain.point.DashboardResponse) dash).getTotalPoint();
+            }
+        }
+        if (amount < 0 && (currentPoint + amount) < 0) {
+            throw new IllegalArgumentException("차감 후 포인트가 음수가 될 수 없습니다. (현재 잔액: " + currentPoint + " P)");
+        }
+
+        adminService.adjustStudentPoint(studentId, amount, request.getReason());
         return ApiResponse.success("학생 포인트가 성공적으로 반영되었습니다.", true);
+    }
+
+    @DeleteMapping("/students/{studentId}")
+    public ApiResponse<Boolean> deleteStudent(@org.springframework.web.bind.annotation.PathVariable("studentId") String studentId) {
+        adminService.deleteStudent(studentId);
+        return ApiResponse.success("학생 계정이 비파괴 Soft Delete 처리되었습니다.", true);
     }
 
     @GetMapping("/students/{studentId}/detail")

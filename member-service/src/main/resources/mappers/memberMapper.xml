@@ -23,28 +23,62 @@
         SELECT COUNT(*) FROM students WHERE student_id = #{studentId}
     </select>
 
-    <!-- 학생 총 포인트 랭킹 조회 -->
+    <!-- 학생 총 순자산(현금 + 주식평가액) 랭킹 조회 -->
     <select id="getStudentRanking" resultType="com.skfkfkvlrm.memberservice.domain.member.StudentRankingResponse">
         SELECT 
-            MAX(id) AS id,
-            ROW_NUMBER() OVER(ORDER BY MAX(total_point) DESC, student_id ASC) AS `rank`,
-            student_id AS studentId, 
-            MAX(name) AS name, 
-            MAX(grade) AS grade, 
-            MAX(class_name) AS className, 
-            MAX(class_number) AS classNumber, 
-            MAX(total_point) AS totalPoint,
+            MAX(s.id) AS id,
+            ROW_NUMBER() OVER(
+                ORDER BY (MAX(s.total_point) + COALESCE(MAX(se.eval_total), 0)) DESC, s.student_id ASC
+            ) AS `rank`,
+            s.student_id AS studentId, 
+            MAX(s.name) AS name, 
+            MAX(s.grade) AS grade, 
+            MAX(s.class_name) AS className, 
+            MAX(s.class_number) AS classNumber, 
+            MAX(s.total_point) AS totalPoint,
+            COALESCE(MAX(se.eval_total), 0) AS stockEvaluation,
+            (MAX(s.total_point) + COALESCE(MAX(se.eval_total), 0)) AS totalAsset,
             COALESCE((
                 SELECT COUNT(*) 
                 FROM coupon_purchase cp 
                 JOIN students s2 ON (cp.student_id = s2.id OR cp.student_id = CAST(s2.id AS CHAR) OR cp.student_id = s2.student_id)
-                WHERE s2.student_id = students.student_id AND cp.state = '사용전'
+                WHERE s2.student_id = s.student_id AND cp.state = '사용전'
             ), 0) AS totalCoupon
-        FROM students
-        WHERE status = 'ACTIVE'
-        GROUP BY student_id
+        FROM students s
+        LEFT JOIN (
+            SELECT 
+                o.student_id,
+                SUM(
+                    (CASE WHEN o.content IN ('매수', 'BUY') THEN o.amount ELSE -o.amount END) *
+                    COALESCE(
+                        (SELECT o2.price 
+                         FROM stock_transactions t 
+                         JOIN orders o2 ON t.buy_order_id = o2.order_id 
+                         WHERE o2.stock_id = o.stock_id 
+                         ORDER BY t.created_date DESC LIMIT 1),
+                        stk.publication_price
+                    )
+                ) AS eval_total
+            FROM orders o
+            JOIN stocks stk ON o.stock_id = stk.stock_id
+            WHERE o.state IN ('체결', 'MATCHED')
+            GROUP BY o.student_id
+        ) se ON (se.student_id = s.student_id OR se.student_id = CAST(s.id AS CHAR))
+        WHERE s.status = 'ACTIVE'
+          AND s.student_id NOT LIKE '%test%'
+          AND s.name NOT LIKE '%테스트%'
+          AND s.name NOT LIKE '%검증%'
+        GROUP BY s.student_id
         ORDER BY `rank` ASC
         LIMIT 100
+    </select>
+
+    <!-- 학생 현재 보유 포인트 조회 -->
+    <select id="getStudentPoint" parameterType="String" resultType="java.lang.Integer">
+        SELECT COALESCE(total_point, 0)
+        FROM students
+        WHERE student_id = #{studentId} OR CAST(id AS CHAR) = #{studentId}
+        LIMIT 1
     </select>
 
     <!-- 학생 포인트 지급/차감 -->
@@ -63,9 +97,60 @@
         LIMIT 1
     </insert>
 
-    <!-- 학생 삭제 (논리 삭제) -->
+    <!-- 학생 삭제 (비파괴 Soft Delete) -->
     <update id="deleteStudent" parameterType="String">
-        UPDATE students SET status = 'DELETED' WHERE (student_id = #{studentId} OR id = CAST(#{studentId} AS UNSIGNED)) AND status = 'ACTIVE'
+        UPDATE students 
+        SET status = 'DELETED' 
+        WHERE (student_id = #{studentId} OR id = CAST(#{studentId} AS UNSIGNED)) 
+          AND status = 'ACTIVE'
     </update>
+
+    <!-- 데모 계정 학생 정보 리셋 -->
+    <update id="resetDemoStudent" parameterType="String">
+        UPDATE students
+        SET total_point = 1000000,
+            total_coupon = 0,
+            status = 'ACTIVE'
+        WHERE student_id = #{studentId} OR CAST(id AS CHAR) = #{studentId}
+    </update>
+
+    <!-- 데모 계정 포인트 이력 소거 -->
+    <delete id="clearGetPoints" parameterType="String">
+        DELETE FROM get_points
+        WHERE student_id = (SELECT id FROM students WHERE student_id = #{studentId} OR CAST(id AS CHAR) = #{studentId} LIMIT 1)
+           OR student_id = #{studentId}
+    </delete>
+
+    <!-- 교실 세션 리셋: 전교생 포인트 및 쿠폰 초기화 -->
+    <update id="resetAllStudents">
+        UPDATE students
+        SET total_point = #{defaultPoint},
+            total_coupon = 0,
+            status = 'ACTIVE'
+        WHERE status != 'DELETED'
+    </update>
+
+    <!-- 관리자 데모 세션 롤백: 삭제된 학생 ACTIVE 복원 -->
+    <update id="restoreDeletedStudents">
+        UPDATE students
+        SET status = 'ACTIVE'
+        WHERE status = 'DELETED'
+    </update>
+
+    <!-- 교실 세션 리셋: 전교생 보유 쿠폰 소거 -->
+    <delete id="clearAllStudentCoupons">
+        DELETE FROM coupon_purchase
+    </delete>
+
+    <!-- 관리자 데모 세션 롤백: 수동 포인트 조정분 합계 조회 -->
+    <select id="getAdminPointAdjustments" resultType="map">
+        SELECT 
+            student_id AS studentId,
+            SUM(point) AS netAdjustment
+        FROM get_points
+        WHERE content LIKE '%관리자%'
+        GROUP BY student_id
+        HAVING SUM(point) != 0
+    </select>
 
 </mapper>

@@ -28,10 +28,7 @@ public class StockOrderServiceImpl implements StockOrderService {
     private final OrderMatcher orderMatcher = new OrderMatcher();
 
     private void validateMarketOpen() {
-        MarketSettings settings = marketSettingsRepository.findById(1).orElse(null);
-        if (settings != null && !settings.isMarketOpen()) {
-            throw new com.skfkfkvlrm.stockgame_spring.exception.MarketClosedException();
-        }
+        // 예약 주문 허용: 시장 휴장 시에도 WAITING 큐에 적재하도록 validateMarketOpen 예외 완화
     }
 
     private void validateTickSize(int price) {
@@ -81,6 +78,18 @@ public class StockOrderServiceImpl implements StockOrderService {
         if (currentPoints < totalOrderPrice) {
             throw new com.skfkfkvlrm.stockgame_spring.exception.InsufficientPointException();
         }
+
+        // 장외 시간 예약 매수 주문 처리
+        MarketSettings settings = marketSettingsRepository.findById(1).orElse(null);
+        boolean isMarketOpen = settings == null || settings.isMarketOpen();
+        if (!isMarketOpen) {
+            Order order = createOrder(request, OrderStatus.매수, OrderStatus.대기);
+            stockDetailRepository.insertOrder(order);
+            stockDetailRepository.setStudentPointDown(totalOrderPrice, request.getStudentId());
+            broadcastOrderUpdate(request.getStockId());
+            return "장외 시간 예약 매수 주문이 접수되었습니다. (개장 시 순차 체결됩니다)";
+        }
+
         // 2. 발행 정보 확인
         Map<String, Object> pubInfo = stockDetailRepository.getStockPubInfo(request.getStockId());
         int pubAmount = getIntOrDefault(pubInfo, "publication_balance");
@@ -201,6 +210,17 @@ public class StockOrderServiceImpl implements StockOrderService {
         if (request.getAmount() > stockAmount) {
             throw new com.skfkfkvlrm.stockgame_spring.exception.InsufficientStockException();
         }
+
+        // 장외 시간 예약 매도 주문 처리
+        MarketSettings settings = marketSettingsRepository.findById(1).orElse(null);
+        boolean isMarketOpen = settings == null || settings.isMarketOpen();
+        if (!isMarketOpen) {
+            Order order = createOrder(request, OrderStatus.매도, OrderStatus.대기);
+            stockDetailRepository.insertOrder(order);
+            broadcastOrderUpdate(request.getStockId());
+            return "장외 시간 예약 매도 주문이 접수되었습니다. (개장 시 순차 체결됩니다)";
+        }
+
         int totalOrderPrice = request.getPrice() * request.getAmount();
         // 2. 학생 간 거래 (부분 체결 로직)
         // 매도 시 "매수" 대기열을 조회

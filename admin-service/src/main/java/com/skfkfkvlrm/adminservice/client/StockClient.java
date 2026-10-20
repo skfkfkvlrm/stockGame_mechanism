@@ -29,4 +29,10 @@ public interface StockClient {
 
     @PostMapping("/api/stock/admin/students/{studentId}/liquidate")
     ApiResponse<Boolean> liquidateStudentAssets(@PathVariable("studentId") String studentId);
+
+    @PostMapping("/api/stock/admin/reset-session")
+    ApiResponse<Map<String, Object>> resetSessionStock(@RequestBody(required = false) Map<String, Object> body);
+
+    @PostMapping("/api/stock/admin/demo/rollback")
+    ApiResponse<Map<String, Object>> rollbackAdminDemoStock();
 }

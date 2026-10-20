@@ -17,4 +17,10 @@ public interface MemberClient {
 
     @DeleteMapping("/api/members/admin/students/{studentId}")
     ApiResponse<Boolean> deleteStudent(@PathVariable("studentId") String studentId);
+
+    @PostMapping("/api/members/admin/reset-session")
+    ApiResponse<Map<String, Object>> resetSessionMembers(@RequestBody(required = false) Map<String, Object> body);
+
+    @PostMapping("/api/members/admin/demo/rollback")
+    ApiResponse<Map<String, Object>> rollbackAdminDemoMembers();
 }

@@ -17,4 +17,5 @@ public interface AdminService {
     void createCoupon(CouponRequest request);
     void updateCoupon(int couponId, CouponRequest request);
     void deleteCoupon(int couponId);
+    void deleteStudent(String studentId);
 }

@@ -88,4 +88,24 @@
 		DELETE FROM coupons WHERE coupon_id = #{couponId}
 	</delete>
 
+	<!-- 데모 학생 쿠폰 삭제 -->
+	<delete id="deleteDemoCoupons">
+		DELETE FROM coupon_purchase
+		WHERE student_id = 'demo'
+		   OR student_id = (SELECT id FROM students WHERE student_id = 'demo' LIMIT 1)
+		   OR student_id = (SELECT CAST(id AS CHAR) FROM students WHERE student_id = 'demo' LIMIT 1)
+	</delete>
+
+	<!-- 시드 쿠폰 5종 ON_SALE 복원 -->
+	<update id="restoreSeedCoupons">
+		UPDATE coupons
+		SET status = 'ON_SALE'
+		WHERE coupon_id IN (1, 2, 3, 30, 31)
+	</update>
+
+	<!-- 교실 세션 리셋: 전체 학생 쿠폰 구매 내역 삭제 -->
+	<delete id="deleteAllCouponPurchases">
+		DELETE FROM coupon_purchase
+	</delete>
+
 </mapper>

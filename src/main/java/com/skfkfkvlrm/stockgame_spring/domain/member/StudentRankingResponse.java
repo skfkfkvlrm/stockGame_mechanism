@@ -2,14 +2,17 @@ package com.skfkfkvlrm.stockgame_spring.domain.member;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 public class StudentRankingResponse {
+    private Integer id;
     private int rank;
     private String studentId;
     private String name;
@@ -17,4 +20,7 @@ public class StudentRankingResponse {
     private String className;
     private int classNumber;
     private int totalPoint;
+    private int totalCoupon;
+    private long totalAsset;
+    private long stockEvaluation;
 }

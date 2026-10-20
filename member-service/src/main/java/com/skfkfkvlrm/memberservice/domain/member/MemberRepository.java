@@ -14,4 +14,13 @@ public interface MemberRepository {
     int updateStudentPoint(@Param("amount") int amount, @Param("studentId") String studentId);
     int insertGetPoint(@Param("studentId") String studentId, @Param("point") int point, @Param("content") String content);
     int deleteStudent(@Param("studentId") String studentId);
+
+    // 신규 추가: 자산 안전 검증 및 데모/세션 동기화 메서드
+    Integer getStudentPoint(@Param("studentId") String studentId);
+    int resetDemoStudent(@Param("studentId") String studentId);
+    int clearGetPoints(@Param("studentId") String studentId);
+    int resetAllStudents(@Param("defaultPoint") int defaultPoint);
+    int restoreDeletedStudents();
+    int clearAllStudentCoupons();
+    List<Map<String, Object>> getAdminPointAdjustments();
 }

@@ -12,9 +12,12 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PointAdjustmentRequest {
+    private String type;
     private int amount;
     private String reason;
 
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
     public int getAmount() { return amount; }
     public void setAmount(int amount) { this.amount = amount; }
     public String getReason() { return reason; }
